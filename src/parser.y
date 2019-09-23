@@ -2,9 +2,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "error.h"
 #include "integer.h"
+#include "strings.h"
 #include "value.h"
 
 extern int yylex();
@@ -12,12 +14,17 @@ extern int yyparse();
 
 %}
 
+%code requires {
+    #include "value.h"
+    #include "integer.h"
+    #include "string.h"
+}
+
 %union {
-    Value* value;
-    IntegerString* int_string;
-    char*   float_string;
-    char*   ascii_string;
-    char*   string;
+    Value*          value;
+    IntegerString*  int_string;
+    String*         string;
+    char*           float_string;
 }
 
 %token <string> COMMENT
@@ -27,12 +34,19 @@ extern int yyparse();
 %token <int_string> BIN_STRING
 %token <float_string> FLOAT_STRING
 %token <value> VALUE
-%token <ascii_string> ASCII_STRING
-%token <string> UTF8_STRING
+%token <string> BARE_STRING
+%token <string> SINGLE_QUOTE_STRING
+%token <string> DOUBLE_QUOTE_STRING
 %token EQUAL
-%token QUOTATION_SINGLE
-%token QUOTATION_DOUBLE
 %token DOT
+
+%type <string> Key
+%type <value> Value
+%type <int_string> ValueInteger
+%type <float_string> ValueFloat
+%type <string> ValueString
+
+%destructor { destroy_value($$); } <value>
 
 %start Root
 
@@ -41,33 +55,33 @@ extern int yyparse();
 Root    : Lines
 
 Lines   :
-        | COMMENT Lines { printf("Comment: %s", $1); }
+        | COMMENT Lines { printf("[PARSER] Comment: %s", $1); }
         | KeyValue Lines
         ;
-KeyValue    : Key EQUAL Value { printf("[PARSER] K/V: %s -> %s", $<string>1, $<string>3); }
+KeyValue    : Key EQUAL Value { printf("[PARSER] K/V: %d -> %d\n", $1->type, $3->type); }
 
-Key     :   QUOTATION_SINGLE UTF8_STRING QUOTATION_SINGLE { $<string>$ = $2; }
-        |   QUOTATION_DOUBLE UTF8_STRING QUOTATION_DOUBLE { $<string>$ = $2; }
-        |   ASCII_STRING { $<string>$ = $1; }
+Key     :   SINGLE_QUOTE_STRING { $$ = $1; }
+        |   DOUBLE_QUOTE_STRING { $$ = $1; }
+        |   BARE_STRING { $$ = $1; }
         ;
 
-Value   :   ValueInteger { $<value>$ = from_integer($<int_string>1); }
-        |   ValueFloat { $<value>$ = from_float($<float_string>1); }
-        |   ValueString { $<value>$ = from_string($<string>1); }
+Value   :   ValueInteger { $$ = from_integer($1); }
+        |   ValueFloat { $$ = from_float($1); }
+        |   ValueString { $$ = from_string($1); }
         ;
 
 
-ValueInteger    :   DEC_STRING { $<int_string>$ = $1; }
-                |   HEX_STRING { $<int_string>$ = $1; }
-                |   OCT_STRING { $<int_string>$ = $1; }
-                |   BIN_STRING { $<int_string>$ = $1; }
+ValueInteger    :   DEC_STRING { $$ = $1; }
+                |   HEX_STRING { $$ = $1; }
+                |   OCT_STRING { $$ = $1; }
+                |   BIN_STRING { $$ = $1; }
                 ;
 
-ValueFloat      :   FLOAT_STRING { $<float_string>$ = $1; }
+ValueFloat      :   FLOAT_STRING { $$ = $1; }
                 ;
 
-ValueString     :   ASCII_STRING { $<string>$ = $1; }
-                |   UTF8_STRING { $<string>$ = $1; }
+ValueString     :   SINGLE_QUOTE_STRING { $$ = $1; }
+                |   DOUBLE_QUOTE_STRING { $$ = $1; }
                 ;
 
 %%
