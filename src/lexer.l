@@ -25,21 +25,22 @@ static int buffer_size = 0;
 %option yylineno
 %option noyywrap
 
+%s SC_BASIC
+%s SC_LITERAL
+%s SC_ML_BASIC
+%s SC_ML_LITERAL
+%s SC_COMMENT
+
 alpha [a-zA-Z]
 digit [0-9]
 alnum {alpha}|{digit}
 
 bare_chars [.-_]|{alnum}
 dec_chars {digit}
+dec_nzero [1-9]
 hex_chars [0-9a-fA-F]
 oct_chars [0-8]
 bin_chars [01]
-
-%s SC_BASIC
-%s SC_LITERAL
-%s SC_ML_BASIC
-%s SC_ML_LITERAL
-%s SC_COMMENT
 
 %{
     /* Source for patterns:
@@ -87,6 +88,9 @@ utf8_chars_basic {ascii_chars_basic}|{utf8_non_ascii_chars}
 whitespace [\t ]
 newline (\r\n)|\n
 
+decimal {dec_nzero}("_"?{dec_chars})*
+decimal_pm [+-]?{decimal}
+
 %%
 
 <INITIAL>"="        return EQUAL;
@@ -98,7 +102,15 @@ newline (\r\n)|\n
 <INITIAL>"'''"      { init_buffer();  BEGIN(SC_ML_LITERAL); }
 <INITIAL>"\"\"\""   { init_buffer();  BEGIN(SC_ML_BASIC); }
 
-<INITIAL>("+"|"-")?{dec_chars}("_"?{dec_chars})* {
+<INITIAL>{decimal_pm} {
+    printf("[LEX] dec: %s\n", yytext);
+    yylval.integer = malloc(sizeof(Integer));
+    yylval.integer->type = INTTYPE_DEC;
+    yylval.integer->value = strdup(yytext);
+    return DEC_STRING;
+}
+
+<INITIAL>("+"|"-")?"0" {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_DEC;
@@ -130,7 +142,7 @@ newline (\r\n)|\n
     return BIN_STRING;
 }
 
-<INITIAL>("+"|"-")?{dec_chars}("_"?{dec_chars})*("."{dec_chars}("_"?{dec_chars})*)?([eE]("+"|"-")?{dec_chars}("_"?{dec_chars})*)? {
+<INITIAL>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_string = strdup(yytext);
     return FLOAT_STRING;
