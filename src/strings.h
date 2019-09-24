@@ -27,5 +27,6 @@ typedef struct {
 } String;
 
 String* create_string(StringType type, const char* raw);
+void print_info_string(String* str);
 
 #endif // STRING_MY_H

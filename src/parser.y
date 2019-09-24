@@ -22,16 +22,16 @@ extern int yyparse();
 
 %union {
     Value*          value;
-    IntegerString*  int_string;
+    Integer*        integer;
     String*         string;
     char*           float_string;
 }
 
 %token <string> COMMENT
-%token <int_string> DEC_STRING
-%token <int_string> HEX_STRING
-%token <int_string> OCT_STRING
-%token <int_string> BIN_STRING
+%token <integer> DEC_STRING
+%token <integer> HEX_STRING
+%token <integer> OCT_STRING
+%token <integer> BIN_STRING
 %token <float_string> FLOAT_STRING
 %token <value> VALUE
 %token <string> BARE_STRING
@@ -44,7 +44,7 @@ extern int yyparse();
 
 %type <string> Key
 %type <value> Value
-%type <int_string> ValueInteger
+%type <integer> ValueInteger
 %type <float_string> ValueFloat
 %type <string> ValueString
 
@@ -60,7 +60,11 @@ Lines   :
         | COMMENT Lines { printf("[PARSER] Comment: %d\n", $1->type); }
         | KeyValue Lines
         ;
-KeyValue    : Key EQUAL Value { printf("[PARSER] K/V: %d -> %d\n", $1->type, $3->type); }
+KeyValue    : Key EQUAL Value {
+    printf("[PARSER] K/V:\n");
+    print_info_string($1);
+    print_info_value($3);
+}
 
 Key     :   BARE_STRING { $$ = $1; }
         |   LITERAL_STRING { $$ = $1; }

@@ -46,7 +46,6 @@ bin_chars [01]
        https://www.w3.org/2005/03/23-lex-U#utf8toot
     */
 %}
-ascii_chars [\x00-\x7F]
 utf8_chars_pat1 [\x80-\xBF]
 utf8_chars_pat2 [\xC2-\xDF]
 utf8_chars_pat3 [\xA0-\xBF]
@@ -77,6 +76,7 @@ utf8_4byte ({utf8_4byte1}|{utf8_4byte2}{utf8_4byte3}){utf8_chars_pat1}{2,2}
 ascii_chars_literal [\x09\x20-\x26\x28-\x7E]
 ascii_chars_basic [\x09\x20\x21\x23-\x5B\x5D-\x7E]
 basic_escaped [btnfr"\\]
+basic_escaped_illegal [^btnfr"\\uU]
 
 utf8_non_ascii_chars {utf8_2byte}|{utf8_3byte}|{utf8_4byte}
 
@@ -100,33 +100,33 @@ newline (\r\n)|\n
 
 <INITIAL>("+"|"-")?{dec_chars}("_"?{dec_chars})* {
     printf("[LEX] dec: %s\n", yytext);
-    yylval.int_string = malloc(sizeof(IntegerString));
-    yylval.int_string->type = INTTYPE_DEC;
-    yylval.int_string->value = strdup(yytext);
+    yylval.integer = malloc(sizeof(Integer));
+    yylval.integer->type = INTTYPE_DEC;
+    yylval.integer->value = strdup(yytext);
     return DEC_STRING;
 }
 
 <INITIAL>"0x"{hex_chars}("_"?{hex_chars})* {
     printf("[LEX] hex: %s\n", yytext);
-    yylval.int_string = malloc(sizeof(IntegerString));
-    yylval.int_string->type = INTTYPE_HEX;
-    yylval.int_string->value = strdup(yytext);
+    yylval.integer = malloc(sizeof(Integer));
+    yylval.integer->type = INTTYPE_HEX;
+    yylval.integer->value = strdup(yytext);
     return HEX_STRING;
 }
 
 <INITIAL>"0o"{oct_chars}("_"?{oct_chars})* {
     printf("[LEX] oct: %s\n", yytext);
-    yylval.int_string = malloc(sizeof(IntegerString));
-    yylval.int_string->type = INTTYPE_OCT;
-    yylval.int_string->value = strdup(yytext);
+    yylval.integer = malloc(sizeof(Integer));
+    yylval.integer->type = INTTYPE_OCT;
+    yylval.integer->value = strdup(yytext);
     return OCT_STRING;
 }
 
 <INITIAL>"0b"{bin_chars}("_"?{bin_chars})* {
     printf("[LEX] bin: %s\n", yytext);
-    yylval.int_string = malloc(sizeof(IntegerString));
-    yylval.int_string->type = INTTYPE_BIN;
-    yylval.int_string->value = strdup(yytext);
+    yylval.integer = malloc(sizeof(Integer));
+    yylval.integer->type = INTTYPE_BIN;
+    yylval.integer->value = strdup(yytext);
     return BIN_STRING;
 }
 
@@ -208,7 +208,13 @@ newline (\r\n)|\n
 <SC_BASIC,SC_ML_BASIC>"\\"(u|U)({hex_chars}{4,4}|{hex_chars}{8,8}) {
     append_buffer_str(yytext);
 }
-%{ // TODO: invalid escape character handling, heading empty line handling %}
+
+<SC_BASIC,SC_ML_BASIC>"\\"{basic_escaped_illegal} {
+    printf("[LEX] Illegal escape sequence: %s\n", yytext);
+    exit(1);
+}
+
+%{ // TODO: heading empty line handling %}
 
 <SC_ML_BASIC>{newline} {
     append_buffer_str(yytext);
