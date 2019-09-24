@@ -6,7 +6,6 @@ String* create_string(StringType type, const char* raw) {
     String* str = malloc(sizeof(String));
     str->type = type;
     int nl_count = count_newlines(raw);
-    printf("COUNT = %d\n", nl_count);
     if (nl_count == 0) {
         str->data.single_line = strdup(raw);
     } else {

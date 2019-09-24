@@ -10,20 +10,15 @@
 #include "value.h"
 #include "strings.h"
 
-char* copy_strip_leading_trailing(const char* str, int count);
-char* copy_quoted_string(const char* quoted_string);
-char* copy_triple_quoted_string(const char* quoted_string);
-char* copy_comment(const char* comment);
+static void init_buffer(void);
+static void append_buffer(char c);
+static void append_buffer_str(const char* str);
+static const char* get_buffer(void);
+static char* duplicate_buffer(void);
 
-void init_buffer(void);
-void append_buffer(char c);
-void append_buffer_str(const char* str);
-const char* get_buffer(void);
-char* duplicate_buffer(void);
-
-char* string_buffer = NULL;
-int buffer_index = 0;
-int buffer_size = 0;
+static char* string_buffer = NULL;
+static int buffer_index = 0;
+static int buffer_size = 0;
 
 %}
 
@@ -213,7 +208,7 @@ newline (\r\n)|\n
 <SC_BASIC,SC_ML_BASIC>"\\"(u|U)({hex_chars}{4,4}|{hex_chars}{8,8}) {
     append_buffer_str(yytext);
 }
-%{ // TODO: invalid escape character handling %}
+%{ // TODO: invalid escape character handling, heading empty line handling %}
 
 <SC_ML_BASIC>{newline} {
     append_buffer_str(yytext);
@@ -226,7 +221,7 @@ newline (\r\n)|\n
 
 %%
 
-void init_buffer(void) {
+static void init_buffer(void) {
     buffer_size = 64;
     if (string_buffer == NULL) {
         string_buffer = malloc(sizeof(char) * buffer_size);
@@ -237,7 +232,7 @@ void init_buffer(void) {
     buffer_index = 0;
 }
 
-void append_buffer(char c) {
+static void append_buffer(char c) {
     assert(string_buffer != NULL);
     if (buffer_index >= buffer_size) {
         buffer_size *= 2;
@@ -247,7 +242,7 @@ void append_buffer(char c) {
     string_buffer[buffer_index] = 0;
 }
 
-void append_buffer_str(const char* str) {
+static void append_buffer_str(const char* str) {
     assert(string_buffer != NULL);
     assert(str != NULL);
     int len = strlen(str);
@@ -259,37 +254,11 @@ void append_buffer_str(const char* str) {
     buffer_index = strlen(string_buffer);
 }
 
-const char* get_buffer(void) {
+static const char* get_buffer(void) {
     return string_buffer;
 }
 
-char* duplicate_buffer(void) {
+static char* duplicate_buffer(void) {
     assert(string_buffer != NULL);
     return strdup(string_buffer);
 }
-
-char* copy_strip_leading_trailing(const char* str, int count) {
-    assert(count > 0);
-    assert(strlen(str) >= count * 2);
-    int len = strlen(str) - count * 2;
-    char* copy = malloc(len);
-    strncpy(copy, str + count, len);
-    return copy;
-}
-
-char* copy_quoted_string(const char* quoted_string) {
-    return copy_strip_leading_trailing(quoted_string, 1);
-}
-
-char* copy_triple_quoted_string(const char* quoted_string) {
-    return copy_strip_leading_trailing(quoted_string, 3);
-}
-
-char* copy_comment(const char* comment_string) {
-    int len = strlen(comment_string) - 1;
-    char* copy = malloc(len);
-    strncpy(copy, comment_string, len);
-    return copy;
-}
-
-
