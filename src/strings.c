@@ -2,7 +2,7 @@
 
 static int count_newlines(const char *str);
 static const char *get_type(String *str);
-char** strip_empty_head_tail(char** multiline, int* len);
+static char **strip_empty_head_tail(char **multiline, int *len);
 
 String *create_string(StringType type, const char *raw) {
   String *str = malloc(sizeof(String));
@@ -29,16 +29,6 @@ String *create_string(StringType type, const char *raw) {
     free(multi_str);
   }
   return str;
-}
-
-char** strip_empty_head_tail(char** multiline, int* len) {
-    int strip_head = strlen(multiline[0]) == 0 ? 1 : 0;
-    int strip_tail = strlen(multiline[(*len) - 1]) == 0 ? 1: 0;
-    int strip_count =  strip_head + strip_tail;
-    char** stripped = malloc(sizeof(char*) * ((*len) - strip_count));
-    memcpy(stripped, multiline + strip_head, sizeof(char*) * ((*len) - strip_count));
-    *len -= strip_count;
-    return stripped;
 }
 
 void print_info_string(String *str) {
@@ -73,6 +63,17 @@ static const char *get_type(String *str) {
   default:
     assert(0);
   }
+}
+
+static char **strip_empty_head_tail(char **multiline, int *len) {
+  int strip_head = strlen(multiline[0]) == 0 ? 1 : 0;
+  int strip_tail = strlen(multiline[(*len) - 1]) == 0 ? 1 : 0;
+  int strip_count = strip_head + strip_tail;
+  char **stripped = malloc(sizeof(char *) * ((*len) - strip_count));
+  memcpy(stripped, multiline + strip_head,
+         sizeof(char *) * ((*len) - strip_count));
+  *len -= strip_count;
+  return stripped;
 }
 
 static int count_newlines(const char *str) {
