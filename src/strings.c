@@ -18,6 +18,7 @@ String* create_string(StringType type, const char* raw) {
         while (token != NULL) {
             assert(multi_index < nl_count + 1);
             multi_str[multi_index++] = strdup(token);
+            token = strtok(NULL, "\n");
         }
         str->data.multi_line.line = multi_str;
         str->data.multi_line.count = nl_count + 1;

@@ -17,7 +17,7 @@ char* copy_comment(const char* comment);
 
 void init_buffer(void);
 void append_buffer(char c);
-void append_buffer(const char* str);
+void append_buffer_str(const char* str);
 const char* get_buffer(void);
 char* duplicate_buffer(void);
 
@@ -44,6 +44,7 @@ bin_chars [01]
 %s SC_LITERAL
 %s SC_ML_BASIC
 %s SC_ML_LITERAL
+%s SC_COMMENT
 
 %{
     /* Source for patterns:
@@ -78,51 +79,31 @@ utf8_4byte2 {utf8_chars_pat10}{utf8_chars_pat1}
 utf8_4byte3 {utf8_chars_pat11}{utf8_chars_pat13}
 utf8_4byte ({utf8_4byte1}|{utf8_4byte2}{utf8_4byte3}){utf8_chars_pat1}{2,2}
 
-ascii_no_nl [\x00-\x09\x0B-\x7F]
-ascii_chars_literal [\x00-\x09\x0B-\x26\x28-\x7F]
-ascii_chars_ml_literal [\x00-\x26\x28-\x7F]|(\x27/\x27/\x27)
-
-ascii_chars_basic_normal [\x00-\x07\x0B\x0E-\x21\x23-\x5B\x5D-\x7F]
-ascii_chars_basic_escaped \x5C[btnfr"\x5C]
-ascii_chars_basic_escaped_u \x5C(u|U)({hex_chars}{4,4}|{hex_chars}{8,8})
-ascii_chars_basic {ascii_chars_basic_normal}|{ascii_chars_basic_escaped}|{ascii_chars_basic_escaped_u}
+ascii_chars_literal [\x09\x20-\x26\x28-\x7E]
+ascii_chars_basic [\x09\x20\x21\x23-\x5B\x5D-\x7E]
+basic_escaped [btnfr"\\]
 
 utf8_non_ascii_chars {utf8_2byte}|{utf8_3byte}|{utf8_4byte}
 
-utf8_chars {ascii_chars}|{utf8_non_ascii_chars}
-utf8_chars_comment {ascii_no_nl}|{utf8_non_ascii_chars}
+utf8_chars_comment {ascii_chars_literal}|{utf8_non_ascii_chars}
 utf8_chars_literal {ascii_chars_literal}|{utf8_non_ascii_chars}
 utf8_chars_basic {ascii_chars_basic}|{utf8_non_ascii_chars}
-utf8_chars_ml_literal {ascii_chars_ml_literal}|{utf8_non_ascii_chars}
+
+whitespace [\t ]
+newline (\r\n)|\n
 
 %%
 
-<INITIAL>"="     return EQUAL;
-<INITIAL>"."     return DOT;
-<INITIAL>"#" {
-    init_buffer();
-    BEGIN(SC_COMMENT);
-}
+<INITIAL>"="        return EQUAL;
+<INITIAL>"."        return DOT;
 
-<SC_COMMENT>{utf8_chars_comment}+ {
-    append_buffer(yytext);
-}
+<INITIAL>"#"        { init_buffer();  BEGIN(SC_COMMENT); }
+<INITIAL>"'"        { init_buffer();  BEGIN(SC_LITERAL); }
+<INITIAL>"\""       { init_buffer();  BEGIN(SC_BASIC); } 
+<INITIAL>"'''"      { init_buffer();  BEGIN(SC_ML_LITERAL); }
+<INITIAL>"\"\"\""   { init_buffer();  BEGIN(SC_ML_BASIC); }
 
-<SC_COMMENT>"\n"|<EOF> {
-    yylval.string = create_string(STRING_TYPE_COMMENT, get_buffer());
-    BEGIN(INITIAL);
-    return COMMENT;
-}
-
-"#"{utf8_chars_comment}*(\n|<EOF>) {
-    char* stripped = copy_comment(yytext);
-    printf("[LEX] comment: %s", stripped);
-    yylval.string = create_string(STRING_TYPE_COMMENT, stripped);
-    free(stripped);
-    return COMMENT;
-}
-
-("+"|"-")?{dec_chars}("_"?{dec_chars})* {
+<INITIAL>("+"|"-")?{dec_chars}("_"?{dec_chars})* {
     printf("[LEX] dec: %s\n", yytext);
     yylval.int_string = malloc(sizeof(IntegerString));
     yylval.int_string->type = INTTYPE_DEC;
@@ -130,7 +111,7 @@ utf8_chars_ml_literal {ascii_chars_ml_literal}|{utf8_non_ascii_chars}
     return DEC_STRING;
 }
 
-"0x"{hex_chars}("_"?{hex_chars})* {
+<INITIAL>"0x"{hex_chars}("_"?{hex_chars})* {
     printf("[LEX] hex: %s\n", yytext);
     yylval.int_string = malloc(sizeof(IntegerString));
     yylval.int_string->type = INTTYPE_HEX;
@@ -138,7 +119,7 @@ utf8_chars_ml_literal {ascii_chars_ml_literal}|{utf8_non_ascii_chars}
     return HEX_STRING;
 }
 
-"0o"{oct_chars}("_"?{oct_chars})* {
+<INITIAL>"0o"{oct_chars}("_"?{oct_chars})* {
     printf("[LEX] oct: %s\n", yytext);
     yylval.int_string = malloc(sizeof(IntegerString));
     yylval.int_string->type = INTTYPE_OCT;
@@ -146,7 +127,7 @@ utf8_chars_ml_literal {ascii_chars_ml_literal}|{utf8_non_ascii_chars}
     return OCT_STRING;
 }
 
-"0b"{bin_chars}("_"?{bin_chars})* {
+<INITIAL>"0b"{bin_chars}("_"?{bin_chars})* {
     printf("[LEX] bin: %s\n", yytext);
     yylval.int_string = malloc(sizeof(IntegerString));
     yylval.int_string->type = INTTYPE_BIN;
@@ -154,46 +135,94 @@ utf8_chars_ml_literal {ascii_chars_ml_literal}|{utf8_non_ascii_chars}
     return BIN_STRING;
 }
 
-
-("+"|"-")?{dec_chars}("_"?{dec_chars})*("."{dec_chars}("_"?{dec_chars})*)?([eE]("+"|"-")?{dec_chars}("_"?{dec_chars})*)? {
+<INITIAL>("+"|"-")?{dec_chars}("_"?{dec_chars})*("."{dec_chars}("_"?{dec_chars})*)?([eE]("+"|"-")?{dec_chars}("_"?{dec_chars})*)? {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_string = strdup(yytext);
     return FLOAT_STRING;
 }
 
-"'"{utf8_chars_literal}*"'" {
-    char* stripped = copy_quoted_string(yytext);
-    printf("[LEX] literal string: '%s'\n", stripped);
-    yylval.string = create_string(STRING_TYPE_LITERAL, stripped);
-    free(stripped);
-    return LITERAL_STRING;
-}
-
-"\""{utf8_chars_basic}*"\"" {
-    char* stripped = copy_quoted_string(yytext);
-    printf("[LEX] basic string: \"%s\"\n", stripped);
-    yylval.string = create_string(STRING_TYPE_BASIC, stripped);
-    free(stripped);
-    return BASIC_STRING;
-}
-
-"'''"{utf8_chars_ml_literal}*"'''" {
-    char* stripped = copy_triple_quoted_string(yytext);
-    printf("[LEX] multiline literal string: '%s'\n", stripped);
-    yylval.string = create_string(STRING_TYPE_MULTILINE_LITERAL, stripped);
-    free(stripped);
-    return MULTI_LITERAL_STRING;
-}
-
-{bare_chars}+ {
+<INITIAL>{bare_chars}+ {
     printf("[LEX] bare string: %s\n", yytext);
     yylval.string = create_string(STRING_TYPE_BARE, yytext);
     return BARE_STRING; 
 }
 
-"\n" {};
+<INITIAL>{whitespace}|{newline} {}
 
-. {};
+<SC_LITERAL,SC_BASIC,SC_ML_LITERAL,SC_ML_BASIC><<EOF>> {
+    printf("[LEX ERROR] EOF, but in some string state\n");
+    exit(1);
+}
+
+<SC_COMMENT>{newline}|<EOF> {
+    printf("[LEX] comment: %s\n", get_buffer());
+    yylval.string = create_string(STRING_TYPE_COMMENT, get_buffer());
+    BEGIN(INITIAL);
+    return COMMENT;
+}
+<SC_COMMENT>{utf8_chars_comment}+ {
+    append_buffer_str(yytext);
+}
+
+<SC_LITERAL>"'" {
+    printf("[LEX] literal: %s\n", get_buffer());
+    yylval.string = create_string(STRING_TYPE_LITERAL, get_buffer());
+    BEGIN(INITIAL);
+    return LITERAL_STRING;
+}
+
+<SC_ML_LITERAL>"'''" {
+    printf("[LEX] multiline literal: %s\n", get_buffer());
+    yylval.string = create_string(STRING_TYPE_MULTILINE_LITERAL, get_buffer());
+    BEGIN(INITIAL);
+    return MULTI_LITERAL_STRING;
+}
+
+<SC_LITERAL,SC_ML_LITERAL>{utf8_chars_literal}+ {
+    append_buffer_str(yytext);
+}
+
+<SC_ML_LITERAL>"'" {
+    append_buffer('\'');
+}
+
+<SC_ML_LITERAL>{newline} {
+    append_buffer_str(yytext);
+}
+
+<SC_BASIC>"\"" {
+    printf("[LEX] basic: %s\n", get_buffer());
+    yylval.string = create_string(STRING_TYPE_BASIC, get_buffer());
+    BEGIN(INITIAL);
+    return BASIC_STRING;
+}
+
+<SC_ML_BASIC>"\"\"\"" {
+    printf("[LEX] multiline basic: %s\n", get_buffer());
+    yylval.string = create_string(STRING_TYPE_MULTILINE_BASIC, get_buffer());
+    BEGIN(INITIAL);
+    return MULTI_BASIC_STRING;
+}
+
+<SC_BASIC,SC_ML_BASIC>{utf8_chars_basic}+ {
+    append_buffer_str(yytext);
+}
+<SC_BASIC,SC_ML_BASIC>"\\"{basic_escaped} {
+    append_buffer_str(yytext);
+}
+<SC_BASIC,SC_ML_BASIC>"\\"(u|U)({hex_chars}{4,4}|{hex_chars}{8,8}) {
+    append_buffer_str(yytext);
+}
+%{ // TODO: invalid escape character handling %}
+
+<SC_ML_BASIC>{newline} {
+    append_buffer_str(yytext);
+}
+
+. {
+    printf("[LEX] Unexpected sequence: %s\n", yytext);
+    exit(1);
+}
 
 %%
 
@@ -214,10 +243,11 @@ void append_buffer(char c) {
         buffer_size *= 2;
         string_buffer = realloc(string_buffer, sizeof(char) * buffer_size);
     }
-    buffer[buffer_index++] = c;
+    string_buffer[buffer_index++] = c;
+    string_buffer[buffer_index] = 0;
 }
 
-void append_buffer(const char* str) {
+void append_buffer_str(const char* str) {
     assert(string_buffer != NULL);
     assert(str != NULL);
     int len = strlen(str);
@@ -226,6 +256,7 @@ void append_buffer(const char* str) {
         string_buffer = realloc(string_buffer, sizeof(char) * buffer_size);
     }
     strncat(string_buffer, str, buffer_size);
+    buffer_index = strlen(string_buffer);
 }
 
 const char* get_buffer(void) {
