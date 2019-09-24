@@ -35,8 +35,10 @@ extern int yyparse();
 %token <float_string> FLOAT_STRING
 %token <value> VALUE
 %token <string> BARE_STRING
-%token <string> SINGLE_QUOTE_STRING
-%token <string> DOUBLE_QUOTE_STRING
+%token <string> LITERAL_STRING
+%token <string> BASIC_STRING
+%token <string> MULTI_LITERAL_STRING
+%token <string> MULTI_BASIC_STRING
 %token EQUAL
 %token DOT
 
@@ -55,14 +57,14 @@ extern int yyparse();
 Root    : Lines
 
 Lines   :
-        | COMMENT Lines { printf("[PARSER] Comment: %s", $1); }
+        | COMMENT Lines { printf("[PARSER] Comment: %d\n", $1->type); }
         | KeyValue Lines
         ;
 KeyValue    : Key EQUAL Value { printf("[PARSER] K/V: %d -> %d\n", $1->type, $3->type); }
 
-Key     :   SINGLE_QUOTE_STRING { $$ = $1; }
-        |   DOUBLE_QUOTE_STRING { $$ = $1; }
-        |   BARE_STRING { $$ = $1; }
+Key     :   BARE_STRING { $$ = $1; }
+        |   LITERAL_STRING { $$ = $1; }
+        |   BASIC_STRING { $$ = $1; }
         ;
 
 Value   :   ValueInteger { $$ = from_integer($1); }
@@ -80,8 +82,10 @@ ValueInteger    :   DEC_STRING { $$ = $1; }
 ValueFloat      :   FLOAT_STRING { $$ = $1; }
                 ;
 
-ValueString     :   SINGLE_QUOTE_STRING { $$ = $1; }
-                |   DOUBLE_QUOTE_STRING { $$ = $1; }
+ValueString     :   LITERAL_STRING { $$ = $1; }
+                |   BASIC_STRING { $$ = $1; }
+                |   MULTI_LITERAL_STRING { $$ = $1; }
+                |   MULTI_BASIC_STRING { $$ = $1; }
                 ;
 
 %%
