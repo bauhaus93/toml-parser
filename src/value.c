@@ -7,7 +7,7 @@ Value *from_integer(Integer *int_string) {
   return val;
 }
 
-Value *from_float(char *float_string) {
+Value *from_float(Float *float_string) {
   Value *val = malloc(sizeof(Value));
   val->type = VALUE_FLOAT;
   val->data.float_value = float_string;
@@ -32,7 +32,7 @@ void print_info_value(Value *value) {
     print_info_string(value->data.string_value);
     break;
   case VALUE_FLOAT:
-    printf("Float = %s\n", value->data.float_value);
+    print_info_float(value->data.float_value);
     break;
   default:
     assert(0);

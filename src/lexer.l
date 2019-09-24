@@ -144,7 +144,50 @@ decimal_pm [+-]?{decimal}
 
 <INITIAL>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
-    yylval.float_string = strdup(yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_NUM;
+    yylval.float_val->value = strdup(yytext);
+    return FLOAT_STRING;
+}
+<INITIAL>"inf" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_INFINITY;
+    return FLOAT_STRING;
+}
+
+<INITIAL>"+inf" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_POSITIVE_INFINITY;
+    return FLOAT_STRING;
+}
+
+<INITIAL>"-inf" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_NEGATIVE_INFINITY;
+    return FLOAT_STRING;
+}
+
+<INITIAL>"nan" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_NAN;
+    return FLOAT_STRING;
+}
+
+<INITIAL>"+nan" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_POSITIVE_NAN;
+    return FLOAT_STRING;
+}
+
+<INITIAL>"-nan" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_val->type = FLOATTYPE_NEGATIVE_NAN;
     return FLOAT_STRING;
 }
 

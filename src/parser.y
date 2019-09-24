@@ -24,7 +24,7 @@ extern int yyparse();
     Value*          value;
     Integer*        integer;
     String*         string;
-    char*           float_string;
+    Float*          float_val;
 }
 
 %token <string> COMMENT
@@ -32,7 +32,7 @@ extern int yyparse();
 %token <integer> HEX_STRING
 %token <integer> OCT_STRING
 %token <integer> BIN_STRING
-%token <float_string> FLOAT_STRING
+%token <float_val> FLOAT_STRING
 %token <value> VALUE
 %token <string> BARE_STRING
 %token <string> LITERAL_STRING
@@ -45,7 +45,7 @@ extern int yyparse();
 %type <string> Key
 %type <value> Value
 %type <integer> ValueInteger
-%type <float_string> ValueFloat
+%type <float_val> ValueFloat
 %type <string> ValueString
 
 %destructor { destroy_value($$); } <value>

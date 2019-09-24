@@ -3,6 +3,8 @@ add_sources(main.c
 	    error.c
 	    integer.h
 	    integer.c
+        float.h
+        float.c
 	    value.h
 	    value.c
 	    strings.h
