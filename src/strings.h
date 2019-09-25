@@ -1,10 +1,10 @@
 #ifndef STRING_MY_H
 #define STRING_MY_H
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 typedef enum {
     STRING_TYPE_COMMENT,
@@ -16,17 +16,17 @@ typedef enum {
 } StringType;
 
 typedef struct {
-  StringType type;
-  union {
-    char*   single_line;
-    struct {
-        int count;
-        char** line;
-    } multi_line;
-  } data;
+    StringType type;
+    union {
+        char *single_line;
+        struct {
+            int count;
+            char **line;
+        } multi_line;
+    } data;
 } String;
 
-String* create_string(StringType type, const char* raw);
-void print_info_string(String* str);
+String *create_string(StringType type, const char *raw);
+void print_info_string(String *str);
 
 #endif // STRING_MY_H

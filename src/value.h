@@ -5,19 +5,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "integer.h"
 #include "float.h"
+#include "integer.h"
 #include "strings.h"
 
 typedef enum { VALUE_INTEGER, VALUE_FLOAT, VALUE_STRING } ValueType;
 
 typedef struct {
-  ValueType type;
-  union {
-    Integer *integer_value;
-    String *string_value;
-    Float *float_value;
-  } data;
+    ValueType type;
+    union {
+        Integer *integer_value;
+        String *string_value;
+        Float *float_value;
+    } data;
 } Value;
 
 Value *from_integer(Integer *);
