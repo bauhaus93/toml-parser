@@ -1,5 +1,4 @@
 %{
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +11,7 @@
 
 static void init_buffer(void);
 static void append_buffer(char c);
-static void append_buffer_str(const char* str);
+static void append_buffer_str(const char* str, size_t len);
 static const char* get_buffer(void);
 static char* duplicate_buffer(void);
 
@@ -20,89 +19,58 @@ static char* string_buffer = NULL;
 static int buffer_index = 0;
 static int buffer_size = 0;
 
+static char* read_literal(void);
+static char* read_basic(void);
+
 %}
 
 %option yylineno
 %option noyywrap
 
-%s SC_BASIC
-%s SC_LITERAL
-%s SC_ML_BASIC
-%s SC_ML_LITERAL
-%s SC_COMMENT
-
 alpha [a-zA-Z]
 digit [0-9]
 alnum {alpha}|{digit}
+any_byte [\x00-\xFF]
 
-bare_chars [.-_]|{alnum}
-dec_chars {digit}
-dec_nzero [1-9]
-hex_chars [0-9a-fA-F]
-oct_chars [0-8]
-bin_chars [01]
-
-%{
-    /* Source for patterns:
-       https://www.w3.org/2005/03/23-lex-U#utf8toot
-    */
-%}
-utf8_chars_pat1 [\x80-\xBF]
-utf8_chars_pat2 [\xC2-\xDF]
-utf8_chars_pat3 [\xA0-\xBF]
-utf8_chars_pat4 [\x80-\x9F]
-utf8_chars_pat5 \xE0
-utf8_chars_pat6 [\xE1-\xEC]
-utf8_chars_pat7 \xED
-utf8_chars_pat8 [\xEE-\xEF]
-utf8_chars_pat9 \xF0
-utf8_chars_pat10 [\xF1-\xF3]
-utf8_chars_pat11 \xF4
-utf8_chars_pat12 [\x90-\xBF]
-utf8_chars_pat13 [\x80-\x8F]
-
-utf8_2byte {utf8_chars_pat2}{utf8_chars_pat1}
-
-utf8_3byte1 {utf8_chars_pat5}{utf8_chars_pat3}
-utf8_3byte2 {utf8_chars_pat6}{utf8_chars_pat1}
-utf8_3byte3 {utf8_chars_pat7}{utf8_chars_pat4}
-utf8_3byte4 {utf8_chars_pat8}{utf8_chars_pat1}
-utf8_3byte ({utf8_3byte1}|{utf8_3byte2}|{utf8_3byte3}|{utf8_3byte4}){utf8_chars_pat1}
-
-utf8_4byte1 {utf8_chars_pat9}{utf8_chars_pat12}
-utf8_4byte2 {utf8_chars_pat10}{utf8_chars_pat1}
-utf8_4byte3 {utf8_chars_pat11}{utf8_chars_pat13}
-utf8_4byte ({utf8_4byte1}|{utf8_4byte2}{utf8_4byte3}){utf8_chars_pat1}{2,2}
-
-ascii_chars_literal [\x09\x20-\x26\x28-\x7E]
-ascii_chars_basic [\x09\x20\x21\x23-\x5B\x5D-\x7E]
-basic_escaped [btnfr"\\]
-basic_escaped_illegal [^btnfr"\\uU]
-
-utf8_non_ascii_chars {utf8_2byte}|{utf8_3byte}|{utf8_4byte}
-
-utf8_chars_comment {ascii_chars_literal}|{utf8_non_ascii_chars}
-utf8_chars_literal {ascii_chars_literal}|{utf8_non_ascii_chars}
-utf8_chars_basic {ascii_chars_basic}|{utf8_non_ascii_chars}
-
-whitespace [\t ]
+whitespace_char [\t ]
+whitespace {whitespace_char}*
 newline (\r\n)|\n
 
-decimal {dec_nzero}("_"?{dec_chars})*
+dec_char {digit}
+dec_nzero [1-9]
+hex_char [0-9a-fA-F]
+oct_char [0-8]
+bin_char [01]
+decimal {dec_nzero}("_"?{dec_char})*
 decimal_pm [+-]?{decimal}
+
+bare_char [-_]|{alnum}
 
 %%
 
-<INITIAL>"="        return EQUAL;
-<INITIAL>"."        return DOT;
+"="        return EQUAL;
+"."        return DOT;
 
-<INITIAL>"#"        { init_buffer();  BEGIN(SC_COMMENT); }
-<INITIAL>"'"        { init_buffer();  BEGIN(SC_LITERAL); }
-<INITIAL>"\""       { init_buffer();  BEGIN(SC_BASIC); } 
-<INITIAL>"'''"      { init_buffer();  BEGIN(SC_ML_LITERAL); }
-<INITIAL>"\"\"\""   { init_buffer();  BEGIN(SC_ML_BASIC); }
+"#"        { init_buffer();  BEGIN(SC_COMMENT); }
 
-<INITIAL>{decimal_pm} {
+"'" {
+    char* str = read_literal();
+
+    yylval.string = create_string(STRING_TYPE_LITERAL, str);
+    free(str);
+    return LITERAL_STRING;
+}
+
+"\"" {
+    char* str = read_basic();
+
+    yylval.string = create_string(STRING_TYPE_BASIC, str);
+    free(str);
+    return BASIC_STRING;
+
+}
+
+{decimal_pm} {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_DEC;
@@ -110,7 +78,7 @@ decimal_pm [+-]?{decimal}
     return DEC_STRING;
 }
 
-<INITIAL>("+"|"-")?"0" {
+("+"|"-")?"0" {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_DEC;
@@ -118,7 +86,7 @@ decimal_pm [+-]?{decimal}
     return DEC_STRING;
 }
 
-<INITIAL>"0x"{hex_chars}("_"?{hex_chars})* {
+"0x"{hex_char}("_"?{hex_char})* {
     printf("[LEX] hex: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_HEX;
@@ -126,7 +94,7 @@ decimal_pm [+-]?{decimal}
     return HEX_STRING;
 }
 
-<INITIAL>"0o"{oct_chars}("_"?{oct_chars})* {
+"0o"{oct_char}("_"?{oct_char})* {
     printf("[LEX] oct: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_OCT;
@@ -134,7 +102,7 @@ decimal_pm [+-]?{decimal}
     return OCT_STRING;
 }
 
-<INITIAL>"0b"{bin_chars}("_"?{bin_chars})* {
+"0b"{bin_char}("_"?{bin_char})* {
     printf("[LEX] bin: %s\n", yytext);
     yylval.integer = malloc(sizeof(Integer));
     yylval.integer->type = INTTYPE_BIN;
@@ -142,138 +110,34 @@ decimal_pm [+-]?{decimal}
     return BIN_STRING;
 }
 
-<INITIAL>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
+{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_val = malloc(sizeof(Float));
     yylval.float_val->type = FLOATTYPE_NUM;
     yylval.float_val->value = strdup(yytext);
     return FLOAT_STRING;
 }
-<INITIAL>"inf" {
+("+"|"-")?"inf" {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_INFINITY;
+    switch(yytext[0]) {
+        case '+':   yylval.float_val->type = FLOATTYPE_POSITIVE_INFINITY; break;
+        case '-':   yylval.float_val->type = FLOATTYPE_NEGATIVE_INFINITY; break;
+        default:    yylval.float_val->type = FLOATTYPE_INFINITY;    break;
+    }
+    return FLOAT_STRING;
+}
+("+"|"-")?"nan" {
+    printf("[LEX] float: %s\n", yytext);
+    yylval.float_val = malloc(sizeof(Float));
+    switch(yytext[0]) {
+        case '+':   yylval.float_val->type = FLOATTYPE_POSITIVE_NAN; break;
+        case '-':   yylval.float_val->type = FLOATTYPE_NEGATIVE_NAN; break;
+        default:    yylval.float_val->type = FLOATTYPE_NAN;    break;
     return FLOAT_STRING;
 }
 
-<INITIAL>"+inf" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_POSITIVE_INFINITY;
-    return FLOAT_STRING;
-}
-
-<INITIAL>"-inf" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_NEGATIVE_INFINITY;
-    return FLOAT_STRING;
-}
-
-<INITIAL>"nan" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_NAN;
-    return FLOAT_STRING;
-}
-
-<INITIAL>"+nan" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_POSITIVE_NAN;
-    return FLOAT_STRING;
-}
-
-<INITIAL>"-nan" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_NEGATIVE_NAN;
-    return FLOAT_STRING;
-}
-
-<INITIAL>{bare_chars}+ {
-    printf("[LEX] bare string: %s\n", yytext);
-    yylval.string = create_string(STRING_TYPE_BARE, yytext);
-    return BARE_STRING; 
-}
-
-<INITIAL>{whitespace}|{newline} {}
-
-<SC_LITERAL,SC_BASIC,SC_ML_LITERAL,SC_ML_BASIC><<EOF>> {
-    printf("[LEX ERROR] EOF, but in some string state\n");
-    exit(1);
-}
-
-<SC_COMMENT>{newline}|<EOF> {
-    printf("[LEX] comment: %s\n", get_buffer());
-    yylval.string = create_string(STRING_TYPE_COMMENT, get_buffer());
-    BEGIN(INITIAL);
-    return COMMENT;
-}
-<SC_COMMENT>{utf8_chars_comment}+ {
-    append_buffer_str(yytext);
-}
-
-<SC_LITERAL>"'" {
-    printf("[LEX] literal: %s\n", get_buffer());
-    yylval.string = create_string(STRING_TYPE_LITERAL, get_buffer());
-    BEGIN(INITIAL);
-    return LITERAL_STRING;
-}
-
-<SC_ML_LITERAL>"'''" {
-    printf("[LEX] multiline literal: %s\n", get_buffer());
-    yylval.string = create_string(STRING_TYPE_MULTILINE_LITERAL, get_buffer());
-    BEGIN(INITIAL);
-    return MULTI_LITERAL_STRING;
-}
-
-<SC_LITERAL,SC_ML_LITERAL>{utf8_chars_literal}+ {
-    append_buffer_str(yytext);
-}
-
-<SC_ML_LITERAL>"'" {
-    append_buffer('\'');
-}
-
-<SC_ML_LITERAL>{newline} {
-    append_buffer_str(yytext);
-}
-
-<SC_BASIC>"\"" {
-    printf("[LEX] basic: %s\n", get_buffer());
-    yylval.string = create_string(STRING_TYPE_BASIC, get_buffer());
-    BEGIN(INITIAL);
-    return BASIC_STRING;
-}
-
-<SC_ML_BASIC>"\"\"\"" {
-    printf("[LEX] multiline basic: %s\n", get_buffer());
-    yylval.string = create_string(STRING_TYPE_MULTILINE_BASIC, get_buffer());
-    BEGIN(INITIAL);
-    return MULTI_BASIC_STRING;
-}
-
-<SC_BASIC,SC_ML_BASIC>{utf8_chars_basic}+ {
-    append_buffer_str(yytext);
-}
-<SC_BASIC,SC_ML_BASIC>"\\"{basic_escaped} {
-    append_buffer_str(yytext);
-}
-<SC_BASIC,SC_ML_BASIC>"\\"(u|U)({hex_chars}{4,4}|{hex_chars}{8,8}) {
-    append_buffer_str(yytext);
-}
-
-<SC_BASIC,SC_ML_BASIC>"\\"{basic_escaped_illegal} {
-    printf("[LEX] Illegal escape sequence: %s\n", yytext);
-    exit(1);
-}
-
-%{ // TODO: heading empty line handling %}
-
-<SC_ML_BASIC>{newline} {
-    append_buffer_str(yytext);
-}
+{whitespace}|{newline} ;
 
 . {
     printf("[LEX] Unexpected sequence: %s\n", yytext);
@@ -282,6 +146,124 @@ decimal_pm [+-]?{decimal}
 
 %%
 
+static char* read_literal(void) {
+    char* buffer = malloc(64 * sizeof(char));
+    size_t size = 64;
+    size_t index = 0;
+    char c;
+
+    while((c = yyinput()) != 0x27) { // terminating ' character
+        if (c == 0x09 || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
+            append_char(&buffer, &index, &size, c);
+        } else { // read valid non-ascii (utf8 chars)
+            unput(c);
+            read_non_ascii_char(&buffer, &index, &size);
+        }
+    }
+    buffer = realloc(buffer, index);
+    return buffer;
+}
+
+static char* read_basic(void) {
+    char* buffer = malloc(64 * sizeof(char));
+    size_t size = 64;
+    size_t index = 0;
+    char c;
+
+    while((c = yyinput()) != 0x22) { // terminating " character
+        if (c == 0x09 || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
+            buffer[index++] = c;
+
+            if (index == size) {
+                size *= 2;
+                buffer = realloc(buffer, size);
+            }
+            if (c == 0x5C) {    // backslash for escaping
+                c = yyinput();
+                switch(c) {
+                    case 0x22:
+                    case 0x5C:
+                    case 0x62:
+                    case 0x66:
+                    case 0x6E:
+                    case 0x72:
+                    case 0x74:
+                        append_char(&buffer, &index, &size, c);
+                        break;
+                    case 0x75:
+                        read_hex(&buffer, &index, &size, 4);
+                        break;
+                    case 0x55:
+                        read_hex(&buffer, &index, &size, 8);
+                        break;
+                    default:
+                        printf("[LEX ERROR] invalid escape char: %c\n", c);
+                        exit(1);
+                }
+            }
+        } else { // read valid non-ascii (utf8 chars)
+            unput(c);
+            read_non_ascii_char(&buffer, &index, &size);
+        }
+    }
+    buffer = realloc(buffer, index);
+    return buffer;
+}
+
+static void append_char(char** buffer, size_t* index, size_t* len, char c) {
+    *buffer[*index++] = c;
+    if (*index == *len) {
+        *len *= 2;
+        *buffer = realloc(*buffer, *len);
+    }
+}
+
+static int is_hex(char c) {
+    return (c >= '0' && c <= '9') ||
+           (c >= 'a' && c <= 'f') ||
+           (c >= 'A' && c <= 'F');
+}
+
+static void read_hex(char** buffer, size_t* index, size_t* len, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        char c = yyinput();
+        if (!is_hex(c)) {
+            printf("[LEX ERROR] invalid unicode escape: expected hex character, got %c\n", c);
+            exit(1);
+        }
+        append_char(buffer, index, len, c);
+    }
+}
+
+
+static void read_non_ascii_char(char** buffer, size_t* index, size_t* len) {
+    char c = yyinput();
+
+    if (c >= 0xF0 && c < 0xF8) { // 11110xxx
+        len = 4;
+    } else if (c >= 0xE0 && c < 0xF0) { // 1110xxxx
+        len = 3;
+    } else if (c >= 0xC0 && c < 0xE0) { // 110xxxxx
+        len = 2
+    } else if (c < 0x80) {                        // 0xxxxxxx
+        // is ascii char
+        printf("[LEX ERROR] utf8: unexpected char: ascii: %c\n", buffer[0]);
+        exit(1);
+    } else {
+        printf("[LEX ERROR] utf8: invalid first byte: 0x%X", buffer[0]);
+        exit(1);
+    }
+    append_char(buffer, index, len, c);
+    for (size_t i = 1; i < len; i++) {
+        c = yyinput();
+        if (c < 0x80 || c >= 0xC0) {
+            printf("[LEX ERROR] utf8: invalid byte #%d: 0x%X\n", i, c);
+            exit(1);
+        }
+        append_char(buffer, index, len, c);
+    }
+    return len;
+}
 static void init_buffer(void) {
     buffer_size = 64;
     if (string_buffer == NULL) {
@@ -303,16 +285,15 @@ static void append_buffer(char c) {
     string_buffer[buffer_index] = 0;
 }
 
-static void append_buffer_str(const char* str) {
+static void append_buffer_str(const char* str, size_t len) {
     assert(string_buffer != NULL);
     assert(str != NULL);
-    int len = strlen(str);
     if (buffer_index + len >= buffer_size) {
         buffer_size = buffer_index + len + 1;
         string_buffer = realloc(string_buffer, sizeof(char) * buffer_size);
     }
-    strncat(string_buffer, str, buffer_size);
-    buffer_index = strlen(string_buffer);
+    memcpy(string_buffer + buffer_index, str, len);
+    buffer_index += len;
 }
 
 static const char* get_buffer(void) {

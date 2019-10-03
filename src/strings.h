@@ -18,10 +18,10 @@ typedef enum {
 typedef struct {
     StringType type;
     union {
-        char *single_line;
+        char* single_line;
         struct {
-            int count;
-            char **line;
+            size_t count;
+            char** line;
         } multi_line;
     } data;
 } String;
