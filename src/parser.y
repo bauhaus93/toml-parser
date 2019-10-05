@@ -22,6 +22,7 @@ extern int yyparse();
     #include "scalar/integer_scalar.h"
     #include "scalar/float_scalar.h"
     #include "scalar/string_scalar.h"
+    #include "scalar/date_scalar.h"
 }
 
 %union {
@@ -30,6 +31,7 @@ extern int yyparse();
     IntegerScalar*      integer_scalar;
     FloatScalar*        float_scalar;
     StringScalar*       string_scalar;
+    DateScalar*         date_scalar;
 }
 
 %token <string_scalar> COMMENT
@@ -44,16 +46,22 @@ extern int yyparse();
 %token <string_scalar> BASIC_STRING
 %token <string_scalar> MULTI_LITERAL_STRING
 %token <string_scalar> MULTI_BASIC_STRING
+%token <date_scalar> OFFSET_DATETIME
+%token <date_scalar> LOCAL_DATETIME
+%token <date_scalar> LOCAL_DATE
+%token <date_scalar> LOCAL_TIME
 %token EQUAL
 %token DOT
 
 %type <key> Key
-%type <key> SimpleKey;
-%type <key> DottedKey;
+%type <key> SimpleKey
+%type <key> DottedKey
+%type <string_scalar> Comment
 %type <scalar> Scalar
 %type <integer_scalar> IntegerScalar
 %type <float_scalar> FloatScalar
 %type <string_scalar> StringScalar
+%type <date_scalar> DateScalar
 
 %start TomlFile
 
@@ -63,8 +71,12 @@ TomlFile   : Lines
 
 Lines   :
         | COMMENT Lines { printf("[PARSER] Comment: "); print_scalar_string($1); }
-        | KeyValue Lines
+        | KeyValue Comment Lines
         ;
+
+Comment :
+        |   COMMENT { $$ = $1; }
+        
 KeyValue    : Key EQUAL Scalar {
     printf("[PARSER] K/V:\n");
     print_key($1);
@@ -85,6 +97,7 @@ DottedKey   :   SimpleKey DOT Key { append_key($1, $3); $$ = $1; }
 Scalar   :  IntegerScalar { $$ = from_integer($1); }
         |   FloatScalar { $$ = from_float($1); }
         |   StringScalar { $$ = from_string($1); }
+        |   DateScalar { $$ = from_date($1); }
         ;
 
 
@@ -103,4 +116,9 @@ StringScalar    :   LITERAL_STRING { $$ = $1; }
                 |   MULTI_BASIC_STRING { $$ = $1; }
                 ;
 
+DateScalar      :   OFFSET_DATETIME { $$ = $1; }
+                |   LOCAL_DATETIME { $$ = $1; }
+                |   LOCAL_DATE { $$ = $1; }
+                |   LOCAL_TIME { $$ = $1; }
+                ;
 %%

@@ -21,6 +21,13 @@ Scalar *from_string(StringScalar *scalar) {
     return val;
 }
 
+Scalar *from_date(DateScalar *scalar) {
+    Scalar *val = malloc(sizeof(Scalar));
+    val->type = SCALAR_DATE;
+    val->data.date_scalar = scalar;
+    return val;
+}
+
 void print_scalar(const Scalar *scalar) {
     assert(scalar != NULL);
     printf("Scalar: ");
@@ -33,6 +40,9 @@ void print_scalar(const Scalar *scalar) {
         break;
     case SCALAR_FLOAT:
         print_scalar_float(scalar->data.float_scalar);
+        break;
+    case SCALAR_DATE:
+        print_scalar_date(scalar->data.date_scalar);
         break;
     default:
         assert(0);

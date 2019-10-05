@@ -44,6 +44,17 @@ decimal_pm [+-]?{decimal}
 
 bare_char [-_]|{alnum}
 
+offset_datetime {full_date}[T ]{full_time}
+local_datetime  {full_date}[T ]{partial_time}
+local_date {full_date}
+local_time {partial_time}
+
+full_date {digit}{4,4}"-"{digit}{2,2}"-"{digit}{2,2}
+full_time {partial_time}{time_offset}
+partial_time {digit}{2,2}":"{digit}{2,2}":"{digit}{2,2}("."{digit}+)?
+time_offset "Z"|{time_num_offset}
+time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
+
 %s RHS
 
 %%
@@ -170,6 +181,39 @@ bare_char [-_]|{alnum}
     }
     BEGIN(INITIAL);
     return FLOAT_STRING;
+}
+
+<RHS>{offset_datetime} {
+    printf("[LEX] offset datetime: %s\n", yytext);
+    yylval.date_scalar = malloc(sizeof(DateScalar));
+    yylval.date_scalar->type = DATE_OFFSET_DATE_TIME;
+    yylval.date_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
+    return OFFSET_DATETIME;
+}
+<RHS>{local_datetime} {
+    printf("[LEX] local datetime: %s\n", yytext);
+    yylval.date_scalar = malloc(sizeof(DateScalar));
+    yylval.date_scalar->type = DATE_LOCAL_DATE_TIME;
+    yylval.date_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
+    return LOCAL_DATETIME;
+}
+<RHS>{local_date} {
+    printf("[LEX] local date: %s\n", yytext);
+    yylval.date_scalar = malloc(sizeof(DateScalar));
+    yylval.date_scalar->type = DATE_LOCAL_DATE;
+    yylval.date_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
+    return LOCAL_DATE;
+}
+<RHS>{local_time} {
+    printf("[LEX] local time: %s\n", yytext);
+    yylval.date_scalar = malloc(sizeof(DateScalar));
+    yylval.date_scalar->type = DATE_LOCAL_TIME;
+    yylval.date_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
+    return LOCAL_TIME;
 }
 
 <INITIAL>{bare_char}+ {
