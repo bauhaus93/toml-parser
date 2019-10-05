@@ -1,11 +1,11 @@
-#include "strings.h"
+#include "string_scalar.h"
 
 static int count_newlines(const char *str);
-static const char *get_type(String *str);
+static const char *get_type(StringScalar *str);
 static char **strip_empty_head_tail(char **multiline, int *len);
 
-String *create_string(StringType type, const char *raw) {
-    String *str = malloc(sizeof(String));
+StringScalar *create_string(StringType type, const char *raw) {
+    StringScalar *str = malloc(sizeof(StringScalar));
     str->type = type;
     int nl_count = count_newlines(raw);
     if (nl_count == 0) {
@@ -32,7 +32,7 @@ String *create_string(StringType type, const char *raw) {
     return str;
 }
 
-void print_info_string(String *str) {
+void print_scalar_string(StringScalar *str) {
     assert(str != NULL);
     printf("String: type = %s, content = ", get_type(str));
     if (str->type == STRING_TYPE_MULTILINE_LITERAL ||
@@ -46,7 +46,7 @@ void print_info_string(String *str) {
     }
 }
 
-static const char *get_type(String *str) {
+static const char *get_type(StringScalar *str) {
     assert(str != NULL);
     switch (str->type) {
     case STRING_TYPE_COMMENT:

@@ -1,5 +1,5 @@
-#ifndef STRING_MY_H
-#define STRING_MY_H
+#ifndef STRING_SCALAR_H
+#define STRING_SCALAR_H
 
 #include <assert.h>
 #include <stdio.h>
@@ -24,9 +24,9 @@ typedef struct {
             char** line;
         } multi_line;
     } data;
-} String;
+} StringScalar;
 
-String *create_string(StringType type, const char *raw);
-void print_info_string(String *str);
+StringScalar *create_string(StringType, const char *);
+void print_scalar_string(StringScalar*);
 
-#endif // STRING_MY_H
+#endif // STRING_SCALAR_H

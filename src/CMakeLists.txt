@@ -1,11 +1,6 @@
 add_sources(main.c
 	    error.h
-	    error.c
-	    integer.h
-	    integer.c
-        float.h
-        float.c
-	    value.h
-	    value.c
-	    strings.h
-	    strings.c)
+	    error.c)
+
+
+add_subdirectory(scalar)

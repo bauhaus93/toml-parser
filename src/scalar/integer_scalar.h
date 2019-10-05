@@ -1,5 +1,5 @@
-#ifndef INTEGER_H
-#define INTEGER_H
+#ifndef INTEGER_SCALAR_H
+#define INTEGER_SCALAR_H
 
 #include <assert.h>
 #include <stdio.h>
@@ -10,8 +10,8 @@ typedef enum { INTTYPE_DEC, INTTYPE_HEX, INTTYPE_OCT, INTTYPE_BIN } IntegerType;
 typedef struct {
     IntegerType type;
     char *value;
-} Integer;
+} IntegerScalar;
 
-void print_info_integer(Integer *);
+void print_scalar_integer(IntegerScalar *);
 
-#endif // INTEGER_H
+#endif // INTEGER_SCALAR_H

@@ -1,19 +1,19 @@
-#include "float.h"
+#include "float_scalar.h"
 
-static const char *get_type(Float *float_value);
+static const char *get_type(FloatScalar *float_value);
 
-void print_info_float(Float *float_value) {
-    assert(float_value != NULL);
-    printf("Float: type = %s", get_type(float_value));
-    if (float_value->type == FLOATTYPE_NUM) {
-        printf("value = %s", float_value->value);
+void print_scalar_float(FloatScalar *scalar) {
+    assert(scalar != NULL);
+    printf("FloatScalar: type = %s", get_type(scalar));
+    if (scalar->type == FLOATTYPE_NUM) {
+        printf("value = %s", scalar->value);
     }
     printf("\n");
 }
 
-static const char *get_type(Float *float_value) {
-    assert(float_value != NULL);
-    switch (float_value->type) {
+static const char *get_type(FloatScalar *scalar) {
+    assert(scalar != NULL);
+    switch (scalar->type) {
     case FLOATTYPE_NUM:
         return "NUM";
     case FLOATTYPE_INFINITY:

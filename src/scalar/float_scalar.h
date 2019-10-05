@@ -1,5 +1,5 @@
-#ifndef FLOAT_H
-#define FLOAT_H
+#ifndef FLOAT_SCALAR_H
+#define FLOAT_SCALAR_H
 
 #include <assert.h>
 #include <stdio.h>
@@ -18,8 +18,8 @@ typedef enum {
 typedef struct {
     FloatType type;
     char *value;
-} Float;
+} FloatScalar;
 
-void print_info_float(Float *);
+void print_scalar_float(FloatScalar *);
 
-#endif // FLOAT_H
+#endif // FLOAT_SCALAR_H

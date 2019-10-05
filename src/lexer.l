@@ -5,9 +5,10 @@
 #include <assert.h>
 
 #include "parser.h"
-#include "integer.h"
-#include "value.h"
-#include "strings.h"
+#include "scalar/scalar.h"
+#include "scalar/integer_scalar.h"
+#include "scalar/float_scalar.h"
+#include "scalar/string_scalar.h"
 
 static char* read_literal(void);
 static char* read_basic(void);
@@ -50,35 +51,35 @@ bare_char [-_]|{alnum}
 
 "#" {
     char* str = read_comment();
-    yylval.string = create_string(STRING_TYPE_COMMENT, str);
+    yylval.string_scalar = create_string(STRING_TYPE_COMMENT, str);
     free(str);
     return COMMENT;
 }
 
 "'" {
     char* str = read_literal();
-    yylval.string = create_string(STRING_TYPE_LITERAL, str);
+    yylval.string_scalar = create_string(STRING_TYPE_LITERAL, str);
     free(str);
     return LITERAL_STRING;
 }
 
 "'''" {
     char* str = read_multiline_literal();
-    yylval.string = create_string(STRING_TYPE_MULTILINE_LITERAL, str);
+    yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_LITERAL, str);
     free(str);
     return MULTI_LITERAL_STRING;
 }
 
 "\"" {
     char* str = read_basic();
-    yylval.string = create_string(STRING_TYPE_BASIC, str);
+    yylval.string_scalar = create_string(STRING_TYPE_BASIC, str);
     free(str);
     return BASIC_STRING;
 }
 
 "\"\"\"" {
     char* str = read_multiline_basic();
-    yylval.string = create_string(STRING_TYPE_MULTILINE_BASIC, str);
+    yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_BASIC, str);
     free(str);
     return MULTI_BASIC_STRING;
 
@@ -86,75 +87,75 @@ bare_char [-_]|{alnum}
 
 {decimal_pm} {
     printf("[LEX] dec: %s\n", yytext);
-    yylval.integer = malloc(sizeof(Integer));
-    yylval.integer->type = INTTYPE_DEC;
-    yylval.integer->value = strdup(yytext);
+    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
+    yylval.integer_scalar->type = INTTYPE_DEC;
+    yylval.integer_scalar->value = strdup(yytext);
     return DEC_STRING;
 }
 
 ("+"|"-")?"0" {
     printf("[LEX] dec: %s\n", yytext);
-    yylval.integer = malloc(sizeof(Integer));
-    yylval.integer->type = INTTYPE_DEC;
-    yylval.integer->value = strdup(yytext);
+    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
+    yylval.integer_scalar->type = INTTYPE_DEC;
+    yylval.integer_scalar->value = strdup(yytext);
     return DEC_STRING;
 }
 
 "0x"{hex_char}("_"?{hex_char})* {
     printf("[LEX] hex: %s\n", yytext);
-    yylval.integer = malloc(sizeof(Integer));
-    yylval.integer->type = INTTYPE_HEX;
-    yylval.integer->value = strdup(yytext);
+    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
+    yylval.integer_scalar->type = INTTYPE_HEX;
+    yylval.integer_scalar->value = strdup(yytext);
     return HEX_STRING;
 }
 
 "0o"{oct_char}("_"?{oct_char})* {
     printf("[LEX] oct: %s\n", yytext);
-    yylval.integer = malloc(sizeof(Integer));
-    yylval.integer->type = INTTYPE_OCT;
-    yylval.integer->value = strdup(yytext);
+    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
+    yylval.integer_scalar->type = INTTYPE_OCT;
+    yylval.integer_scalar->value = strdup(yytext);
     return OCT_STRING;
 }
 
 "0b"{bin_char}("_"?{bin_char})* {
     printf("[LEX] bin: %s\n", yytext);
-    yylval.integer = malloc(sizeof(Integer));
-    yylval.integer->type = INTTYPE_BIN;
-    yylval.integer->value = strdup(yytext);
+    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
+    yylval.integer_scalar->type = INTTYPE_BIN;
+    yylval.integer_scalar->value = strdup(yytext);
     return BIN_STRING;
 }
 
 {decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
-    yylval.float_val->type = FLOATTYPE_NUM;
-    yylval.float_val->value = strdup(yytext);
+    yylval.float_scalar = malloc(sizeof(FloatScalar));
+    yylval.float_scalar->type = FLOATTYPE_NUM;
+    yylval.float_scalar->value = strdup(yytext);
     return FLOAT_STRING;
 }
 ("+"|"-")?"inf" {
     printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
-        case '+':   yylval.float_val->type = FLOATTYPE_POSITIVE_INFINITY; break;
-        case '-':   yylval.float_val->type = FLOATTYPE_NEGATIVE_INFINITY; break;
-        default:    yylval.float_val->type = FLOATTYPE_INFINITY;    break;
+        case '+':   yylval.float_scalar->type = FLOATTYPE_POSITIVE_INFINITY; break;
+        case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_INFINITY; break;
+        default:    yylval.float_scalar->type = FLOATTYPE_INFINITY;    break;
     }
     return FLOAT_STRING;
 }
 ("+"|"-")?"nan" {
     printf("[LEX] float: %s\n", yytext);
-    yylval.float_val = malloc(sizeof(Float));
+    yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
-        case '+':   yylval.float_val->type = FLOATTYPE_POSITIVE_NAN; break;
-        case '-':   yylval.float_val->type = FLOATTYPE_NEGATIVE_NAN; break;
-        default:    yylval.float_val->type = FLOATTYPE_NAN;    break;
+        case '+':   yylval.float_scalar->type = FLOATTYPE_POSITIVE_NAN; break;
+        case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_NAN; break;
+        default:    yylval.float_scalar->type = FLOATTYPE_NAN;    break;
     }
     return FLOAT_STRING;
 }
 
 {bare_char}+ {
-    printf("[LEX] bare string: %s\n", yytext);
-    yylval.string = create_string(STRING_TYPE_BARE, yytext);
+    printf("[LEX] bare.string_scalar: %s\n", yytext);
+    yylval.string_scalar = create_string(STRING_TYPE_BARE, yytext);
     return BARE_STRING;
 }
 
