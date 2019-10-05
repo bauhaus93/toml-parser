@@ -2,6 +2,7 @@
 #define KEY_H
 
 #include <stdlib.h>
+#include <assert.h>
 
 #include "scalar/string_scalar.h"
 

@@ -56,6 +56,7 @@ time_offset "Z"|{time_num_offset}
 time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 %s RHS
+%s ARRAY
 
 %%
 
@@ -65,6 +66,19 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 "." return DOT;
+"," {
+    BEGIN(ARRAY);
+    return COMMA;
+}
+"[" {
+    BEGIN(ARRAY);
+    return BRACKETS_OPEN;
+}
+"]" {
+    BEGIN(INITIAL);
+    return BRACKETS_CLOSE;
+}
+
 
 "#" {
     char* str = read_comment();
@@ -104,10 +118,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     free(str);
     BEGIN(INITIAL);
     return MULTI_BASIC_STRING;
-
 }
 
-<RHS>{decimal_pm} {
+<RHS,ARRAY>{decimal_pm} {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
@@ -116,7 +129,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return DEC_STRING;
 }
 
-<RHS>("+"|"-")?"0" {
+<RHS,ARRAY>("+"|"-")?"0" {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
@@ -125,7 +138,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return DEC_STRING;
 }
 
-<RHS>"0x"{hex_char}("_"?{hex_char})* {
+<RHS,ARRAY>"0x"{hex_char}("_"?{hex_char})* {
     printf("[LEX] hex: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_HEX;
@@ -134,7 +147,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return HEX_STRING;
 }
 
-<RHS>"0o"{oct_char}("_"?{oct_char})* {
+<RHS,ARRAY>"0o"{oct_char}("_"?{oct_char})* {
     printf("[LEX] oct: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_OCT;
@@ -143,7 +156,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return OCT_STRING;
 }
 
-<RHS>"0b"{bin_char}("_"?{bin_char})* {
+<RHS,ARRAY>"0b"{bin_char}("_"?{bin_char})* {
     printf("[LEX] bin: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_BIN;
@@ -152,7 +165,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return BIN_STRING;
 }
 
-<RHS>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
+<RHS,ARRAY>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     yylval.float_scalar->type = FLOATTYPE_NUM;
@@ -160,7 +173,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return FLOAT_STRING;
 }
-<RHS>("+"|"-")?"inf" {
+<RHS,ARRAY>("+"|"-")?"inf" {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
@@ -171,7 +184,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return FLOAT_STRING;
 }
-<RHS>("+"|"-")?"nan" {
+<RHS,ARRAY>("+"|"-")?"nan" {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
@@ -183,7 +196,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     return FLOAT_STRING;
 }
 
-<RHS>{offset_datetime} {
+<RHS,ARRAY>{offset_datetime} {
     printf("[LEX] offset datetime: %s\n", yytext);
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_OFFSET_DATE_TIME;
@@ -191,7 +204,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return OFFSET_DATETIME;
 }
-<RHS>{local_datetime} {
+<RHS,ARRAY>{local_datetime} {
     printf("[LEX] local datetime: %s\n", yytext);
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_DATE_TIME;
@@ -199,7 +212,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return LOCAL_DATETIME;
 }
-<RHS>{local_date} {
+<RHS,ARRAY>{local_date} {
     printf("[LEX] local date: %s\n", yytext);
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_DATE;
@@ -207,7 +220,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return LOCAL_DATE;
 }
-<RHS>{local_time} {
+<RHS,ARRAY>{local_time} {
     printf("[LEX] local time: %s\n", yytext);
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_TIME;

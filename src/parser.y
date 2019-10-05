@@ -5,7 +5,10 @@
 #include <string.h>
 
 #include "error.h"
+#include "key_pair.h"
 #include "key.h"
+#include "value.h"
+#include "array.h"
 #include "scalar/scalar.h"
 #include "scalar/integer_scalar.h"
 #include "scalar/float_scalar.h"
@@ -17,7 +20,10 @@ extern int yyparse();
 %}
 
 %code requires {
+    #include "key_pair.h"
     #include "key.h"
+    #include "value.h"
+    #include "array.h"
     #include "scalar/scalar.h"
     #include "scalar/integer_scalar.h"
     #include "scalar/float_scalar.h"
@@ -26,7 +32,10 @@ extern int yyparse();
 }
 
 %union {
+    KeyPair*            key_pair;
     Key*                key;
+    Value*              value;
+    Array*              array;
     Scalar*             scalar;
     IntegerScalar*      integer_scalar;
     FloatScalar*        float_scalar;
@@ -52,11 +61,16 @@ extern int yyparse();
 %token <date_scalar> LOCAL_TIME
 %token EQUAL
 %token DOT
+%token COMMA
+%token BRACKETS_OPEN;
+%token BRACKETS_CLOSE;
 
+%type <key_pair> KeyValue
 %type <key> Key
 %type <key> SimpleKey
 %type <key> DottedKey
-%type <string_scalar> Comment
+%type <value> Value
+%type <array> Array
 %type <scalar> Scalar
 %type <integer_scalar> IntegerScalar
 %type <float_scalar> FloatScalar
@@ -71,17 +85,10 @@ TomlFile   : Lines
 
 Lines   :
         | COMMENT Lines { printf("[PARSER] Comment: "); print_scalar_string($1); }
-        | KeyValue Comment Lines
+        | KeyValue Lines { print_key_pair($1); }
         ;
 
-Comment :
-        |   COMMENT { $$ = $1; }
-        
-KeyValue    : Key EQUAL Scalar {
-    printf("[PARSER] K/V:\n");
-    print_key($1);
-    print_scalar($3);
-}
+KeyValue    : Key EQUAL Value { $$ = make_pair($1, $3); }
 
 Key     :   SimpleKey { $$ = $1; }
         |   DottedKey { $$ = $1; }
@@ -94,7 +101,15 @@ SimpleKey   :   BARE_STRING { $$ = key_from_string($1); }
 
 DottedKey   :   SimpleKey DOT Key { append_key($1, $3); $$ = $1; }
 
-Scalar   :  IntegerScalar { $$ = from_integer($1); }
+
+Value   :   Scalar { $$ = value_from_scalar($1); }
+        |   BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = value_from_array($2); }
+
+
+Array   :   Scalar COMMA Array { Array* a = array_from_scalar($1); append_element(a, $3); $$ = a; }
+        |   Scalar { $$ = array_from_scalar($1); }
+
+Scalar  :   IntegerScalar { $$ = from_integer($1); }
         |   FloatScalar { $$ = from_float($1); }
         |   StringScalar { $$ = from_string($1); }
         |   DateScalar { $$ = from_date($1); }
