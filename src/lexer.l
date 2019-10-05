@@ -44,15 +44,22 @@ decimal_pm [+-]?{decimal}
 
 bare_char [-_]|{alnum}
 
+%s RHS
+
 %%
 
-"="        return EQUAL;
-"."        return DOT;
+"=" {
+    BEGIN(RHS);
+    return EQUAL;
+}
+
+"." return DOT;
 
 "#" {
     char* str = read_comment();
     yylval.string_scalar = create_string(STRING_TYPE_COMMENT, str);
     free(str);
+    BEGIN(INITIAL);
     return COMMENT;
 }
 
@@ -60,6 +67,7 @@ bare_char [-_]|{alnum}
     char* str = read_literal();
     yylval.string_scalar = create_string(STRING_TYPE_LITERAL, str);
     free(str);
+    BEGIN(INITIAL);
     return LITERAL_STRING;
 }
 
@@ -67,6 +75,7 @@ bare_char [-_]|{alnum}
     char* str = read_multiline_literal();
     yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_LITERAL, str);
     free(str);
+    BEGIN(INITIAL);
     return MULTI_LITERAL_STRING;
 }
 
@@ -74,6 +83,7 @@ bare_char [-_]|{alnum}
     char* str = read_basic();
     yylval.string_scalar = create_string(STRING_TYPE_BASIC, str);
     free(str);
+    BEGIN(INITIAL);
     return BASIC_STRING;
 }
 
@@ -81,58 +91,65 @@ bare_char [-_]|{alnum}
     char* str = read_multiline_basic();
     yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_BASIC, str);
     free(str);
+    BEGIN(INITIAL);
     return MULTI_BASIC_STRING;
 
 }
 
-{decimal_pm} {
+<RHS>{decimal_pm} {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
     yylval.integer_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return DEC_STRING;
 }
 
-("+"|"-")?"0" {
+<RHS>("+"|"-")?"0" {
     printf("[LEX] dec: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
     yylval.integer_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return DEC_STRING;
 }
 
-"0x"{hex_char}("_"?{hex_char})* {
+<RHS>"0x"{hex_char}("_"?{hex_char})* {
     printf("[LEX] hex: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_HEX;
     yylval.integer_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return HEX_STRING;
 }
 
-"0o"{oct_char}("_"?{oct_char})* {
+<RHS>"0o"{oct_char}("_"?{oct_char})* {
     printf("[LEX] oct: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_OCT;
     yylval.integer_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return OCT_STRING;
 }
 
-"0b"{bin_char}("_"?{bin_char})* {
+<RHS>"0b"{bin_char}("_"?{bin_char})* {
     printf("[LEX] bin: %s\n", yytext);
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_BIN;
     yylval.integer_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return BIN_STRING;
 }
 
-{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
+<RHS>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     yylval.float_scalar->type = FLOATTYPE_NUM;
     yylval.float_scalar->value = strdup(yytext);
+    BEGIN(INITIAL);
     return FLOAT_STRING;
 }
-("+"|"-")?"inf" {
+<RHS>("+"|"-")?"inf" {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
@@ -140,9 +157,10 @@ bare_char [-_]|{alnum}
         case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_INFINITY; break;
         default:    yylval.float_scalar->type = FLOATTYPE_INFINITY;    break;
     }
+    BEGIN(INITIAL);
     return FLOAT_STRING;
 }
-("+"|"-")?"nan" {
+<RHS>("+"|"-")?"nan" {
     printf("[LEX] float: %s\n", yytext);
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     switch(yytext[0]) {
@@ -150,10 +168,11 @@ bare_char [-_]|{alnum}
         case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_NAN; break;
         default:    yylval.float_scalar->type = FLOATTYPE_NAN;    break;
     }
+    BEGIN(INITIAL);
     return FLOAT_STRING;
 }
 
-{bare_char}+ {
+<INITIAL>{bare_char}+ {
     printf("[LEX] bare.string_scalar: %s\n", yytext);
     yylval.string_scalar = create_string(STRING_TYPE_BARE, yytext);
     return BARE_STRING;

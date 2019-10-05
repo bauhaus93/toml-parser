@@ -50,8 +50,6 @@ extern int yyparse();
 %type <float_scalar> FloatScalar
 %type <string_scalar> StringScalar
 
-%destructor { destroy_value($$); } <value>
-
 %start TomlFile
 
 %%
@@ -71,6 +69,7 @@ KeyValue    : Key EQUAL Scalar {
 Key     :   BARE_STRING { $$ = $1; }
         |   LITERAL_STRING { $$ = $1; }
         |   BASIC_STRING { $$ = $1; }
+        |   Key DOT Key { $$ = $1; }
         ;
 
 Scalar   :  IntegerScalar { $$ = from_integer($1); }
