@@ -21,7 +21,7 @@ Scalar *from_string(StringScalar *scalar) {
     return val;
 }
 
-void print_scalar(Scalar *scalar) {
+void print_scalar(const Scalar *scalar) {
     assert(scalar != NULL);
     printf("Scalar: ");
     switch (scalar->type) {
@@ -36,24 +36,5 @@ void print_scalar(Scalar *scalar) {
         break;
     default:
         assert(0);
-    }
-}
-
-void destroy_scalar(Scalar *scalar) {
-    if (scalar != NULL) {
-        printf("Freeing scalar of type %d\n", scalar->type);
-        switch (scalar->type) {
-        case SCALAR_INTEGER:
-            free(scalar->data.integer_scalar);
-            break;
-        case SCALAR_FLOAT:
-            free(scalar->data.float_scalar);
-            break;
-        case SCALAR_STRING:
-            free(scalar->data.string_scalar);
-            break;
-        default:
-            assert(0);
-        }
     }
 }

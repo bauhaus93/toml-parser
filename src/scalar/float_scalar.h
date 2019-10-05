@@ -20,6 +20,6 @@ typedef struct {
     char *value;
 } FloatScalar;
 
-void print_scalar_float(FloatScalar *);
+void print_scalar_float(const FloatScalar *);
 
 #endif // FLOAT_SCALAR_H

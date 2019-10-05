@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "error.h"
+#include "key.h"
 #include "scalar/scalar.h"
 #include "scalar/integer_scalar.h"
 #include "scalar/float_scalar.h"
@@ -16,6 +17,7 @@ extern int yyparse();
 %}
 
 %code requires {
+    #include "key.h"
     #include "scalar/scalar.h"
     #include "scalar/integer_scalar.h"
     #include "scalar/float_scalar.h"
@@ -23,6 +25,7 @@ extern int yyparse();
 }
 
 %union {
+    Key*                key;
     Scalar*             scalar;
     IntegerScalar*      integer_scalar;
     FloatScalar*        float_scalar;
@@ -44,7 +47,9 @@ extern int yyparse();
 %token EQUAL
 %token DOT
 
-%type <string_scalar> Key
+%type <key> Key
+%type <key> SimpleKey;
+%type <key> DottedKey;
 %type <scalar> Scalar
 %type <integer_scalar> IntegerScalar
 %type <float_scalar> FloatScalar
@@ -62,15 +67,20 @@ Lines   :
         ;
 KeyValue    : Key EQUAL Scalar {
     printf("[PARSER] K/V:\n");
-    print_scalar_string($1);
+    print_key($1);
     print_scalar($3);
 }
 
-Key     :   BARE_STRING { $$ = $1; }
-        |   LITERAL_STRING { $$ = $1; }
-        |   BASIC_STRING { $$ = $1; }
-        |   Key DOT Key { $$ = $1; }
+Key     :   SimpleKey { $$ = $1; }
+        |   DottedKey { $$ = $1; }
         ;
+
+SimpleKey   :   BARE_STRING { $$ = key_from_string($1); }
+            |   LITERAL_STRING { $$ = key_from_string($1); }
+            |   BASIC_STRING { $$ = key_from_string($1); }
+            ;
+
+DottedKey   :   SimpleKey DOT Key { append_key($1, $3); $$ = $1; }
 
 Scalar   :  IntegerScalar { $$ = from_integer($1); }
         |   FloatScalar { $$ = from_float($1); }

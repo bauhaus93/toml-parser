@@ -27,6 +27,6 @@ typedef struct {
 } StringScalar;
 
 StringScalar *create_string(StringType, const char *);
-void print_scalar_string(StringScalar*);
+void print_scalar_string(const StringScalar*);
 
 #endif // STRING_SCALAR_H

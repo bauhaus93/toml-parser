@@ -23,7 +23,6 @@ typedef struct {
 Scalar *from_integer(IntegerScalar *);
 Scalar *from_float(FloatScalar *);
 Scalar *from_string(StringScalar *);
-void print_scalar(Scalar *);
-void destroy_scalar(Scalar *);
+void print_scalar(const Scalar *);
 
 #endif // SCALAR_H

@@ -1,7 +1,7 @@
 #include "string_scalar.h"
 
 static int count_newlines(const char *str);
-static const char *get_type(StringScalar *str);
+static const char *get_type(const StringScalar *str);
 static char **strip_empty_head_tail(char **multiline, int *len);
 
 StringScalar *create_string(StringType type, const char *raw) {
@@ -32,7 +32,7 @@ StringScalar *create_string(StringType type, const char *raw) {
     return str;
 }
 
-void print_scalar_string(StringScalar *str) {
+void print_scalar_string(const StringScalar *str) {
     assert(str != NULL);
     printf("String: type = %s, content = ", get_type(str));
     if (str->type == STRING_TYPE_MULTILINE_LITERAL ||
@@ -46,7 +46,7 @@ void print_scalar_string(StringScalar *str) {
     }
 }
 
-static const char *get_type(StringScalar *str) {
+static const char *get_type(const StringScalar *str) {
     assert(str != NULL);
     switch (str->type) {
     case STRING_TYPE_COMMENT:

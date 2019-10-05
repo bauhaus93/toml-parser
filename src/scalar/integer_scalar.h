@@ -12,6 +12,6 @@ typedef struct {
     char *value;
 } IntegerScalar;
 
-void print_scalar_integer(IntegerScalar *);
+void print_scalar_integer(const IntegerScalar *);
 
 #endif // INTEGER_SCALAR_H
