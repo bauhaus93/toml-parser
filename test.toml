@@ -1,0 +1,73 @@
+# comment lelelel
+
+dec_1 = 3
+dec_2 = -3
+dec_3 = +333
+dec_4 = 3_400
+dec_5 = -933_000
+'dec_6' = -0
+
+hex_1 = 0xDEADBEEF
+hex_2 = 0xbadcafe
+hex_3 = 0xDEAD_beef
+hex_4 = 0x34000
+hex_5 = 0x34_ff_da
+"hex_\uABCD0000" = 0x66_2Aa
+
+oct_1 = 0o1234567
+oct_2 = 0o1337
+oct_3 = 0o022_3000
+
+bin_1 = 0b00000
+bin_2 = 0b10101_00
+bin_3 = 0b10_0_1_0
+
+float_1 = 3.4534
+float_2 = 5_333_333e-3
+float_3 = -3_33_4E-4_000_3
+float_4 = inf
+float_5 = -inf
+float_6 = +inf
+float_7 = nan
+float_8 = +nan
+float_9 = -nan
+
+'single_quote_key_1' = 'single quote value'
+'single_quoute_key_2' = 'single" quote V4luE'
+
+"double_quote_key_1" = "double quoute\"value"
+"bbbbbbb xflele" = "\r\tleel'\b"
+"aaaaaaaaa \"\\\flele" = "\r\tleel'\b"
+"double_q33" = "xyz\u0000lelel"
+"q44" = "123\U12346666hui"
+"\U0666ABCD" = "\"\"lelel\r\f\u12FF"
+
+utf8_1 = "ééaaaàààùùùù"
+utf8_2 = "¬ÿÿ8oÿo^"
+
+multi_literal = '''
+derbe
+test
+1234
+rofl1337'
+hui''h'
+ENDE
+'''
+
+multi_basic = """
+slslsl
+aeqwe
+qw
+eqw
+e
+\"q
+\"\"
+'''
+\n\U1337abcd
+
+9021203
+"""
+1337 = "ROFL"
+nolf.rofl = 3
+"hans".'du'.wurst = -inf
+3.1415 = "PI"
