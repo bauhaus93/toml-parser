@@ -216,9 +216,13 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 <INITIAL,IN_BRACKETS,IN_CURLY>{bare_char}+ {
-    printf("[LEX] bare: '%s'\n", yytext);
     yylval.scalar = create_scalar_dup(SCALAR_STRING_BARE, yytext);
     return BARE_STRING;
+}
+
+<IN_CURLY>{newline} {
+    printf("[LEX_ERROR] No newline in inline table allowed, but found newline\n");
+    exit(1);
 }
 
 {whitespace}|{newline} ;
@@ -242,7 +246,7 @@ static void push_condition(int condition) {
         stack_root = new_root;
     }
     BEGIN(condition);
-    printf("[LEX] push @ '%s' -> %d\n", yytext, YY_START);
+    // printf("[LEX] push @ '%s' -> %d\n", yytext, YY_START);
 }
 
 static void pop_condition(void) {
@@ -257,7 +261,7 @@ static void pop_condition(void) {
             BEGIN(stack_root->condition);
         }
     }
-    printf("[LEX] pop @ '%s' -> %d\n", yytext, YY_START);
+    // printf("[LEX] pop @ '%s' -> %d\n", yytext, YY_START);
 }
 
 static inline void pop_condition_if(int condition) {
