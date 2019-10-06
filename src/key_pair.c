@@ -11,7 +11,8 @@ KeyPair* make_pair(Key* key, Value* value) {
 
 void print_key_pair(const KeyPair* key_pair) {
     assert(key_pair != NULL);
-    printf("KeyPair:\n");
+    printf("KeyPair:\n\t");
     print_key(key_pair->key);
+    printf("\t");
     print_value(key_pair->value);
 }

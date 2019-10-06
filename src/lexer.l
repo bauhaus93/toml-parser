@@ -5,10 +5,7 @@
 #include <assert.h>
 
 #include "parser.h"
-#include "scalar/scalar.h"
-#include "scalar/integer_scalar.h"
-#include "scalar/float_scalar.h"
-#include "scalar/string_scalar.h"
+#include "scalar.h"
 
 static char* read_literal(void);
 static char* read_basic(void);
@@ -79,16 +76,14 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 "#" {
     char* str = read_comment();
-    yylval.string_scalar = create_string(STRING_TYPE_COMMENT, str);
-    free(str);
+    yylval.scalar = create_scalar(SCALAR_STRING_COMMENT, str);
     BEGIN(INITIAL);
     return COMMENT;
 }
 
 "'" {
     char* str = read_literal();
-    yylval.string_scalar = create_string(STRING_TYPE_LITERAL, str);
-    free(str);
+    yylval.scalar = create_scalar(SCALAR_STRING_LITERAL, str);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
@@ -97,8 +92,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 "'''" {
     char* str = read_multiline_literal();
-    yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_LITERAL, str);
-    free(str);
+    yylval.scalar = create_scalar(SCALAR_STRING_ML_LITERAL, str);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
@@ -107,8 +101,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 "\"" {
     char* str = read_basic();
-    yylval.string_scalar = create_string(STRING_TYPE_BASIC, str);
-    free(str);
+    yylval.scalar = create_scalar(SCALAR_STRING_BASIC, str);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
@@ -117,8 +110,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 "\"\"\"" {
     char* str = read_multiline_basic();
-    yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_BASIC, str);
-    free(str);
+    yylval.scalar = create_scalar(SCALAR_STRING_ML_BASIC, str);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
@@ -126,148 +118,123 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 <RHS,ARRAY>{decimal_pm} {
-    printf("[LEX] dec: %s\n", yytext);
-    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
-    yylval.integer_scalar->type = INTTYPE_DEC;
-    yylval.integer_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return DEC_STRING;
+    return DECIMAL;
 }
 
 <RHS,ARRAY>("+"|"-")?"0" {
-    printf("[LEX] dec: %s\n", yytext);
-    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
-    yylval.integer_scalar->type = INTTYPE_DEC;
-    yylval.integer_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return DEC_STRING;
+    return DECIMAL;
 }
 
 <RHS,ARRAY>"0x"{hex_char}("_"?{hex_char})* {
-    printf("[LEX] hex: %s\n", yytext);
-    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
-    yylval.integer_scalar->type = INTTYPE_HEX;
-    yylval.integer_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_HEX, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return HEX_STRING;
+    return HEXADECIMAL;
 }
 
 <RHS,ARRAY>"0o"{oct_char}("_"?{oct_char})* {
-    printf("[LEX] oct: %s\n", yytext);
-    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
-    yylval.integer_scalar->type = INTTYPE_OCT;
-    yylval.integer_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_OCT, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return OCT_STRING;
+    return OCTAL;
 }
 
 <RHS,ARRAY>"0b"{bin_char}("_"?{bin_char})* {
-    printf("[LEX] bin: %s\n", yytext);
-    yylval.integer_scalar = malloc(sizeof(IntegerScalar));
-    yylval.integer_scalar->type = INTTYPE_BIN;
-    yylval.integer_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_BIN, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return BIN_STRING;
+    return BINARY;
 }
 
 <RHS,ARRAY>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_scalar = malloc(sizeof(FloatScalar));
-    yylval.float_scalar->type = FLOATTYPE_NUM;
-    yylval.float_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return FLOAT_STRING;
+    return FLOAT;
 }
 <RHS,ARRAY>("+"|"-")?"inf" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_scalar = malloc(sizeof(FloatScalar));
+    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
-        case '+':   yylval.float_scalar->type = FLOATTYPE_POSITIVE_INFINITY; break;
-        case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_INFINITY; break;
-        default:    yylval.float_scalar->type = FLOATTYPE_INFINITY;    break;
+        case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_INF; break;
+        case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_INF; break;
+        default:    yylval.scalar->type = SCALAR_FLOAT_INF;     break;
     }
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return FLOAT_STRING;
+    return FLOAT;
 }
 <RHS,ARRAY>("+"|"-")?"nan" {
-    printf("[LEX] float: %s\n", yytext);
-    yylval.float_scalar = malloc(sizeof(FloatScalar));
+    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
-        case '+':   yylval.float_scalar->type = FLOATTYPE_POSITIVE_NAN; break;
-        case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_NAN; break;
-        default:    yylval.float_scalar->type = FLOATTYPE_NAN;    break;
+        case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_NAN; break;
+        case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_NAN; break;
+        default:    yylval.scalar->type = SCALAR_FLOAT_NAN;     break;
     }
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
-    return FLOAT_STRING;
+    return FLOAT;
 }
 
 <RHS,ARRAY>{offset_datetime} {
-    printf("[LEX] offset datetime: %s\n", yytext);
-    yylval.date_scalar = malloc(sizeof(DateScalar));
-    yylval.date_scalar->type = DATE_OFFSET_DATE_TIME;
-    yylval.date_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_DATE_OFFSET_DATETIME, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
     return OFFSET_DATETIME;
 }
 <RHS,ARRAY>{local_datetime} {
-    printf("[LEX] local datetime: %s\n", yytext);
-    yylval.date_scalar = malloc(sizeof(DateScalar));
-    yylval.date_scalar->type = DATE_LOCAL_DATE_TIME;
-    yylval.date_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATETIME, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
     return LOCAL_DATETIME;
 }
 <RHS,ARRAY>{local_date} {
-    printf("[LEX] local date: %s\n", yytext);
-    yylval.date_scalar = malloc(sizeof(DateScalar));
-    yylval.date_scalar->type = DATE_LOCAL_DATE;
-    yylval.date_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATE, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
     return LOCAL_DATE;
 }
 <RHS,ARRAY>{local_time} {
-    printf("[LEX] local time: %s\n", yytext);
-    yylval.date_scalar = malloc(sizeof(DateScalar));
-    yylval.date_scalar->type = DATE_LOCAL_TIME;
-    yylval.date_scalar->value = strdup(yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_TIME, yytext);
     if (YY_START == RHS) {
         BEGIN(INITIAL);
     }
     return LOCAL_TIME;
 }
 
+<RHS,ARRAY>"true"|"false" {
+    yylval.scalar = create_scalar_dup(SCALAR_BOOLEAN, yytext);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
+    return BOOLEAN;
+}
+
 <INITIAL>{bare_char}+ {
-    printf("[LEX] bare string scalar: %s\n", yytext);
-    yylval.string_scalar = create_string(STRING_TYPE_BARE, yytext);
+    yylval.scalar = create_scalar_dup(SCALAR_STRING_BARE, yytext);
     return BARE_STRING;
 }
 
 {whitespace}|{newline} ;
 
 . {
-    printf("[LEX] Unexpected sequence: %s\n", yytext);
+    printf("[LEX_ERROR] Unexpected sequence: %s\n", yytext);
     exit(1);
 }
 

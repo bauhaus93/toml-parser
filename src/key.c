@@ -2,10 +2,10 @@
 
 static void print_sub_key(const Key* key);
 
-Key* key_from_string(StringScalar* scalar) {
-    assert(scalar->type == STRING_TYPE_BASIC ||
-           scalar->type == STRING_TYPE_LITERAL ||
-           scalar->type == STRING_TYPE_BARE);
+Key* key_from_scalar(Scalar* scalar) {
+    assert(scalar->type == SCALAR_STRING_BASIC ||
+           scalar->type == SCALAR_STRING_LITERAL ||
+           scalar->type == SCALAR_STRING_BARE);
     Key* key = malloc(sizeof(Key));
     key->name = scalar;
     key->descendant = NULL;
@@ -20,7 +20,7 @@ void append_key(Key* base, Key* appendant) {
 }
 
 void print_key(const Key* key) {
-    printf("Key: %s", key->name->data.single_line);
+    printf("Key: %s", key->name->str);
     if (key->descendant != NULL) {
         print_sub_key(key->descendant);
     }
@@ -28,7 +28,7 @@ void print_key(const Key* key) {
 }
 
 static void print_sub_key(const Key* key) {
-    printf("->%s", key->name->data.single_line);
+    printf("->%s", key->name->str);
     if (key->descendant != NULL) {
         print_sub_key(key->descendant);
     }

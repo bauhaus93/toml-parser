@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "scalar/scalar.h"
+#include "scalar.h"
 
 typedef struct _Array {
     Scalar *element;

@@ -19,7 +19,7 @@ Value *value_from_array(Array *array) {
 }
 
 void print_value(const Value *value) {
-    printf("Value: type = %s\n", get_type(value));
+    printf("Value: type = %s, ", get_type(value));
     switch (value->type) {
     case VALUE_SCALAR:
         print_scalar(value->data.scalar);

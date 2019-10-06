@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "scalar/scalar.h"
+#include "scalar.h"
 #include "array.h"
 
 typedef enum { VALUE_SCALAR, VALUE_ARRAY } ValueType;
