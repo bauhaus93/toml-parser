@@ -66,10 +66,8 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 "." return DOT;
-"," {
-    BEGIN(ARRAY);
-    return COMMA;
-}
+"," return COMMA;
+
 "[" {
     BEGIN(ARRAY);
     return BRACKETS_OPEN;
@@ -78,7 +76,6 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     BEGIN(INITIAL);
     return BRACKETS_CLOSE;
 }
-
 
 "#" {
     char* str = read_comment();
@@ -92,7 +89,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     char* str = read_literal();
     yylval.string_scalar = create_string(STRING_TYPE_LITERAL, str);
     free(str);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return LITERAL_STRING;
 }
 
@@ -100,7 +99,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     char* str = read_multiline_literal();
     yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_LITERAL, str);
     free(str);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return MULTI_LITERAL_STRING;
 }
 
@@ -108,7 +109,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     char* str = read_basic();
     yylval.string_scalar = create_string(STRING_TYPE_BASIC, str);
     free(str);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return BASIC_STRING;
 }
 
@@ -116,7 +119,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     char* str = read_multiline_basic();
     yylval.string_scalar = create_string(STRING_TYPE_MULTILINE_BASIC, str);
     free(str);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return MULTI_BASIC_STRING;
 }
 
@@ -125,7 +130,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
     yylval.integer_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return DEC_STRING;
 }
 
@@ -134,7 +141,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_DEC;
     yylval.integer_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return DEC_STRING;
 }
 
@@ -143,7 +152,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_HEX;
     yylval.integer_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return HEX_STRING;
 }
 
@@ -152,7 +163,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_OCT;
     yylval.integer_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return OCT_STRING;
 }
 
@@ -161,7 +174,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.integer_scalar = malloc(sizeof(IntegerScalar));
     yylval.integer_scalar->type = INTTYPE_BIN;
     yylval.integer_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return BIN_STRING;
 }
 
@@ -170,7 +185,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.float_scalar = malloc(sizeof(FloatScalar));
     yylval.float_scalar->type = FLOATTYPE_NUM;
     yylval.float_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return FLOAT_STRING;
 }
 <RHS,ARRAY>("+"|"-")?"inf" {
@@ -181,7 +198,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
         case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_INFINITY; break;
         default:    yylval.float_scalar->type = FLOATTYPE_INFINITY;    break;
     }
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return FLOAT_STRING;
 }
 <RHS,ARRAY>("+"|"-")?"nan" {
@@ -192,7 +211,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
         case '-':   yylval.float_scalar->type = FLOATTYPE_NEGATIVE_NAN; break;
         default:    yylval.float_scalar->type = FLOATTYPE_NAN;    break;
     }
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return FLOAT_STRING;
 }
 
@@ -201,7 +222,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_OFFSET_DATE_TIME;
     yylval.date_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return OFFSET_DATETIME;
 }
 <RHS,ARRAY>{local_datetime} {
@@ -209,7 +232,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_DATE_TIME;
     yylval.date_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return LOCAL_DATETIME;
 }
 <RHS,ARRAY>{local_date} {
@@ -217,7 +242,9 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_DATE;
     yylval.date_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return LOCAL_DATE;
 }
 <RHS,ARRAY>{local_time} {
@@ -225,12 +252,14 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
     yylval.date_scalar = malloc(sizeof(DateScalar));
     yylval.date_scalar->type = DATE_LOCAL_TIME;
     yylval.date_scalar->value = strdup(yytext);
-    BEGIN(INITIAL);
+    if (YY_START == RHS) {
+        BEGIN(INITIAL);
+    }
     return LOCAL_TIME;
 }
 
 <INITIAL>{bare_char}+ {
-    printf("[LEX] bare.string_scalar: %s\n", yytext);
+    printf("[LEX] bare string scalar: %s\n", yytext);
     yylval.string_scalar = create_string(STRING_TYPE_BARE, yytext);
     return BARE_STRING;
 }

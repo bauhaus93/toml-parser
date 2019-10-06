@@ -1,6 +1,3 @@
 DateTime:
     Check dates for validity (for now, any 2 digits for month/day/hour/min/sec are allowed)
-Array Lexing:
-    Maybe check better way for handling start condition of array.
-    Is set to INITIAL after every each reading of a value, but needs to be set back to ARRAY and not INITIAL for correct lexing.
-    Now done by setting condition to ARRAY after a comma is read.
+    Maybe do this later via elektra specs?!
