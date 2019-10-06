@@ -19,7 +19,7 @@ Scalar *create_scalar_dup(ScalarType type, const char *scalar_string) {
 }
 void print_scalar(const Scalar *scalar) {
     assert(scalar != NULL);
-    printf("Scalar: type = %s, value = '%s'\n", get_type(scalar), scalar->str);
+    printf("/%s: '%s'", get_type(scalar), scalar->str);
 }
 static const char *get_type(const Scalar *scalar) {
     switch (scalar->type) {

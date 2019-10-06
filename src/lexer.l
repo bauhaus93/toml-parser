@@ -18,6 +18,18 @@ static void read_non_ascii_char(char**, size_t*, size_t*);
 static void read_hex(char**, size_t*, size_t*, size_t);
 static int is_hex(char);
 
+
+typedef struct _ConditionStack {
+    int condition;
+    struct _ConditionStack* next;
+} ConditionStack;
+
+static ConditionStack* stack_root = NULL;
+
+static void push_condition(int);
+static void pop_condition(void);
+static inline void pop_condition_if(int);
+
 %}
 
 %option yylineno
@@ -53,12 +65,13 @@ time_offset "Z"|{time_num_offset}
 time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 %s RHS
-%s ARRAY
+%s IN_BRACKETS
+%s IN_CURLY
 
 %%
 
 "=" {
-    BEGIN(RHS);
+    push_condition(RHS);
     return EQUAL;
 }
 
@@ -66,167 +79,144 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 "," return COMMA;
 
 "[" {
-    BEGIN(ARRAY);
+    push_condition(IN_BRACKETS);
     return BRACKETS_OPEN;
 }
 "]" {
-    BEGIN(INITIAL);
+    pop_condition();
+    pop_condition_if(RHS);
     return BRACKETS_CLOSE;
+}
+
+"{" {
+    push_condition(IN_CURLY);
+    return CURLY_OPEN;
+}
+"}" {
+    pop_condition();
+    pop_condition_if(RHS);
+    return CURLY_CLOSE;
 }
 
 "#" {
     char* str = read_comment();
     yylval.scalar = create_scalar(SCALAR_STRING_COMMENT, str);
-    BEGIN(INITIAL);
     return COMMENT;
 }
 
 "'" {
     char* str = read_literal();
     yylval.scalar = create_scalar(SCALAR_STRING_LITERAL, str);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return LITERAL_STRING;
 }
 
 "'''" {
     char* str = read_multiline_literal();
     yylval.scalar = create_scalar(SCALAR_STRING_ML_LITERAL, str);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return MULTI_LITERAL_STRING;
 }
 
 "\"" {
     char* str = read_basic();
     yylval.scalar = create_scalar(SCALAR_STRING_BASIC, str);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return BASIC_STRING;
 }
 
 "\"\"\"" {
     char* str = read_multiline_basic();
     yylval.scalar = create_scalar(SCALAR_STRING_ML_BASIC, str);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return MULTI_BASIC_STRING;
 }
 
-<RHS,ARRAY>{decimal_pm} {
+<RHS,IN_BRACKETS>{decimal_pm} {
     yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return DECIMAL;
 }
 
-<RHS,ARRAY>("+"|"-")?"0" {
+<RHS,IN_BRACKETS>("+"|"-")?"0" {
     yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return DECIMAL;
 }
 
-<RHS,ARRAY>"0x"{hex_char}("_"?{hex_char})* {
+<RHS,IN_BRACKETS>"0x"{hex_char}("_"?{hex_char})* {
     yylval.scalar = create_scalar_dup(SCALAR_INTEGER_HEX, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return HEXADECIMAL;
 }
 
-<RHS,ARRAY>"0o"{oct_char}("_"?{oct_char})* {
+<RHS,IN_BRACKETS>"0o"{oct_char}("_"?{oct_char})* {
     yylval.scalar = create_scalar_dup(SCALAR_INTEGER_OCT, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return OCTAL;
 }
 
-<RHS,ARRAY>"0b"{bin_char}("_"?{bin_char})* {
+<RHS,IN_BRACKETS>"0b"{bin_char}("_"?{bin_char})* {
     yylval.scalar = create_scalar_dup(SCALAR_INTEGER_BIN, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return BINARY;
 }
 
-<RHS,ARRAY>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
+<RHS,IN_BRACKETS>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
     yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return FLOAT;
 }
-<RHS,ARRAY>("+"|"-")?"inf" {
+<RHS,IN_BRACKETS>("+"|"-")?"inf" {
     yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
         case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_INF; break;
         case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_INF; break;
         default:    yylval.scalar->type = SCALAR_FLOAT_INF;     break;
     }
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return FLOAT;
 }
-<RHS,ARRAY>("+"|"-")?"nan" {
+<RHS,IN_BRACKETS>("+"|"-")?"nan" {
     yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
         case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_NAN; break;
         case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_NAN; break;
         default:    yylval.scalar->type = SCALAR_FLOAT_NAN;     break;
     }
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return FLOAT;
 }
 
-<RHS,ARRAY>{offset_datetime} {
+<RHS,IN_BRACKETS>{offset_datetime} {
     yylval.scalar = create_scalar_dup(SCALAR_DATE_OFFSET_DATETIME, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return OFFSET_DATETIME;
 }
-<RHS,ARRAY>{local_datetime} {
+<RHS,IN_BRACKETS>{local_datetime} {
     yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATETIME, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return LOCAL_DATETIME;
 }
-<RHS,ARRAY>{local_date} {
+<RHS,IN_BRACKETS>{local_date} {
     yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATE, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return LOCAL_DATE;
 }
-<RHS,ARRAY>{local_time} {
+<RHS,IN_BRACKETS>{local_time} {
     yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_TIME, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return LOCAL_TIME;
 }
 
-<RHS,ARRAY>"true"|"false" {
+<RHS,IN_BRACKETS>"true"|"false" {
     yylval.scalar = create_scalar_dup(SCALAR_BOOLEAN, yytext);
-    if (YY_START == RHS) {
-        BEGIN(INITIAL);
-    }
+    pop_condition_if(RHS);
     return BOOLEAN;
 }
 
-<INITIAL>{bare_char}+ {
+<INITIAL,IN_BRACKETS,IN_CURLY>{bare_char}+ {
+    printf("[LEX] bare: '%s'\n", yytext);
     yylval.scalar = create_scalar_dup(SCALAR_STRING_BARE, yytext);
     return BARE_STRING;
 }
@@ -239,6 +229,42 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 %%
+
+static void push_condition(int condition) {
+    if (stack_root == NULL) {
+        stack_root = malloc(sizeof(ConditionStack));
+        stack_root->condition = condition;
+        stack_root->next = NULL;
+    } else {
+        ConditionStack* new_root = malloc(sizeof(ConditionStack));
+        new_root->condition = condition;
+        new_root->next = stack_root;
+        stack_root = new_root;
+    }
+    BEGIN(condition);
+    printf("[LEX] push @ '%s' -> %d\n", yytext, YY_START);
+}
+
+static void pop_condition(void) {
+    if (stack_root == NULL) {
+        printf("[LEX_ERROR] Wanted to pop start condition, but stack is empty\n");
+        exit(1);
+    } else {
+        stack_root = stack_root->next;
+        if (stack_root == NULL) {
+            BEGIN(INITIAL);
+        } else {
+            BEGIN(stack_root->condition);
+        }
+    }
+    printf("[LEX] pop @ '%s' -> %d\n", yytext, YY_START);
+}
+
+static inline void pop_condition_if(int condition) {
+    if (YY_START == condition) {
+        pop_condition();
+    }
+}
 
 static char* read_literal(void) {
     char* buffer = malloc(64 * sizeof(char));

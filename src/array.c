@@ -2,30 +2,33 @@
 
 static void print_array_element(const Array *);
 
-void append_element(Array *base, Array *appendant) {
-    assert(base != NULL);
-    assert(appendant != NULL);
-    base->next = appendant;
-}
-
-Array* array_from_scalar(Scalar* scalar) {
+Array* array_from_value(Value* value) {
     Array* array = malloc(sizeof(Array));
-    array->element = scalar;
+    array->element = value;
     array->next = NULL;
     return array;
 }
 
+Array* push_value(Array *root, Value* value) {
+    assert(root != NULL);
+    assert(value != NULL);
+    Array* a = array_from_value(value);
+    a->next = root;
+    return a;
+}
+
 void print_array(const Array *array) {
     assert(array != NULL);
-    printf("Array: [\n");
+    printf(" [ ");
     print_array_element(array);
-    printf("]\n");
+    printf(" ] ");
 }
 
 static void print_array_element(const Array *array) {
     assert(array != NULL);
-    print_scalar(array->element);
+    print_value(array->element);
     if (array->next != NULL) {
+        printf(", ");
         print_array_element(array->next);
     }
 }

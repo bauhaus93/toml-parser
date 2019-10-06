@@ -20,15 +20,14 @@ void append_key(Key* base, Key* appendant) {
 }
 
 void print_key(const Key* key) {
-    printf("Key: %s", key->name->str);
+    printf("%s", key->name->str);
     if (key->descendant != NULL) {
         print_sub_key(key->descendant);
     }
-    printf("\n");
 }
 
 static void print_sub_key(const Key* key) {
-    printf("->%s", key->name->str);
+    printf(".%s", key->name->str);
     if (key->descendant != NULL) {
         print_sub_key(key->descendant);
     }

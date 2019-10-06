@@ -10,6 +10,9 @@
 #include "value.h"
 #include "array.h"
 #include "scalar.h"
+#include "value.h"
+#include "table.h"
+#include "inline_table.h"
 
 extern int yylex();
 extern int yyparse();
@@ -22,6 +25,8 @@ extern int yyparse();
     #include "value.h"
     #include "array.h"
     #include "scalar.h"
+    #include "table.h"
+    #include "inline_table.h"
 }
 
 %union {
@@ -30,6 +35,8 @@ extern int yyparse();
     Value*              value;
     Array*              array;
     Scalar*             scalar;
+    Table*              table;
+    InlineTable*        inline_table;
 }
 
 %token <scalar> COMMENT
@@ -52,10 +59,12 @@ extern int yyparse();
 %token EQUAL
 %token DOT
 %token COMMA
-%token BRACKETS_OPEN;
-%token BRACKETS_CLOSE;
+%token BRACKETS_OPEN
+%token BRACKETS_CLOSE
+%token CURLY_OPEN
+%token CURLY_CLOSE
 
-%type <key_pair> KeyValue
+%type <key_pair> KeyPair
 %type <key> Key
 %type <key> SimpleKey
 %type <key> DottedKey
@@ -67,6 +76,8 @@ extern int yyparse();
 %type <scalar> FloatScalar
 %type <scalar> StringScalar
 %type <scalar> DateScalar
+%type <table> Table
+%type <inline_table> InlineTable
 
 
 %start TomlFile
@@ -76,11 +87,18 @@ extern int yyparse();
 TomlFile   : Lines
 
 Lines   :
-        | COMMENT Lines { printf("[PARSER] Comment: "); print_scalar($1); }
-        | KeyValue Lines { print_key_pair($1); }
+        | COMMENT Lines { print_scalar($1); printf("\n"); }
+        | Table Comment Lines
+        | KeyPair Comment Lines { print_key_pair($1); printf("\n"); }
         ;
 
-KeyValue    : Key EQUAL Value { $$ = make_pair($1, $3); }
+Comment :
+        |   COMMENT { print_scalar($1); }
+        ;
+
+Table   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); print_key($2); }
+
+KeyPair    : Key EQUAL Value { $$ = make_pair($1, $3); }
 
 Key     :   SimpleKey { $$ = $1; }
         |   DottedKey { $$ = $1; }
@@ -95,11 +113,16 @@ DottedKey   :   SimpleKey DOT Key { append_key($1, $3); $$ = $1; }
 
 
 Value   :   Scalar { $$ = value_from_scalar($1); }
+        |   CURLY_OPEN InlineTable CURLY_CLOSE { $$ = value_from_inline_table($2); }
         |   BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = value_from_array($2); }
 
 
-Array   :   Scalar COMMA Array { Array* a = array_from_scalar($1); append_element(a, $3); $$ = a; }
-        |   Scalar { $$ = array_from_scalar($1); }
+InlineTable :   KeyPair COMMA InlineTable { $$ = push_pair($3, $1); }
+            |   KeyPair { $$ = inline_table_from_key_pair($1); }
+
+
+Array   :   Value COMMA Array { $$ = push_value($3, $1); }
+        |   Value { $$ = array_from_value($1); }
 
 Scalar  :   IntegerScalar { $$ = $1; }
         |   BooleanScalar { $$ = $1; }

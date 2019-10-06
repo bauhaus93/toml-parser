@@ -6,20 +6,31 @@
 #include <assert.h>
 
 #include "scalar.h"
-#include "array.h"
 
-typedef enum { VALUE_SCALAR, VALUE_ARRAY } ValueType;
+
+// Break include cycle by forward declarations
+// #include "array.h"
+// #include "inline_table.h"
+typedef struct _Array Array;
+typedef struct _InlineTable InlineTable;
+
+typedef enum { VALUE_SCALAR, VALUE_ARRAY, VALUE_INLINE_TABLE } ValueType;
 
 typedef struct {
     ValueType type;
     union {
         Scalar *scalar;
         Array *array;
+        InlineTable* table;
     } data;
 } Value;
 
 Value *value_from_scalar(Scalar *);
 Value *value_from_array(Array *);
+Value *value_from_inline_table(InlineTable*);
 void print_value(const Value *);
+
+extern void print_array(const Array*);
+extern void print_inline_table(const InlineTable*);
 
 #endif // VALUE_H

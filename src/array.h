@@ -5,15 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "scalar.h"
+#include "value.h"
 
 typedef struct _Array {
-    Scalar *element;
+    Value *element;
     struct _Array *next;
 } Array;
 
-void append_element(Array *, Array *);
-Array *array_from_scalar(Scalar *);
+Array* push_value(Array *, Value *);
+Array *array_from_value(Value *);
 
 void print_array(const Array *);
 

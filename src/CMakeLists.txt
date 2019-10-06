@@ -9,5 +9,9 @@ add_sources(main.c
 	    scalar.c
 	    array.h
 	    array.c
+        table.h
+        table.c
+        inline_table.h
+        inline_table.c
 	    error.h
 	    error.c)
