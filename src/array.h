@@ -7,14 +7,15 @@
 
 #include "value.h"
 
-typedef struct _Array {
-    Value *element;
-    struct _Array *next;
+typedef struct _Array
+{
+	Value * element;
+	struct _Array * next;
 } Array;
 
-Array* push_value(Array *, Value *);
-Array *array_from_value(Value *);
+Array * push_value (Array *, Value *);
+Array * array_from_value (Value *);
 
-void print_array(const Array *);
+void print_array (const Array *);
 
 #endif // ARRAY_H

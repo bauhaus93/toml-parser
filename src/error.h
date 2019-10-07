@@ -4,6 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int yyerror(const char *msg);
+int yyerror (const char * msg);
 
 #endif // ERROR_H

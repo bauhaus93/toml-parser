@@ -1,0 +1,9 @@
+BreakBeforeBraces: Allman
+UseTab: ForIndentation
+TabWidth: 8
+IndentWidth: 8
+SpaceBeforeParens: Always
+PointerAlignment: Middle
+ColumnLimit: 140
+AlignTrailingComments: true
+AllowShortBlocksOnASingleLine: false

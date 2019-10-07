@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-extern int yylex();
-extern int yyparse();
+extern int yyparse ();
 
-int main(int argc, char **argv) {
-    yyparse();
-    return 0;
+int main (int argc, char ** argv)
+{
+	yyparse ();
+	return 0;
 }

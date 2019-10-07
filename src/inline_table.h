@@ -7,14 +7,15 @@
 
 #include "key_pair.h"
 
-typedef struct _InlineTable {
-    KeyPair *pair;
-    struct _InlineTable *next;
+typedef struct _InlineTable
+{
+	KeyPair * pair;
+	struct _InlineTable * next;
 } InlineTable;
 
-InlineTable* push_pair(InlineTable *, KeyPair *);
-InlineTable *inline_table_from_key_pair(KeyPair *);
+InlineTable * push_pair (InlineTable *, KeyPair *);
+InlineTable * inline_table_from_key_pair (KeyPair *);
 
-void print_inline_table(const InlineTable *table);
+void print_inline_table (const InlineTable * table);
 
 #endif // INLINE_TABLE_H

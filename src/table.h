@@ -7,13 +7,18 @@
 
 #include "key.h"
 
-typedef enum { TABLE_STANDARD, TABLE_ARRAY } TableType;
+typedef enum
+{
+	TABLE_STANDARD,
+	TABLE_ARRAY
+} TableType;
 
-typedef struct {
-    TableType type;
-    Key *key;
+typedef struct
+{
+	TableType type;
+	Key * key;
 } Table;
 
-Table *create_table(TableType, Key *);
+Table * create_table (TableType, Key *);
 
 #endif // TABLE_H
