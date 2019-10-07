@@ -36,10 +36,11 @@ typedef struct
 {
 	ScalarType type;
 	char * str;
+	int line;
 } Scalar;
 
-Scalar * createScalar (ScalarType, char *);
-Scalar * createScalarDup (ScalarType, const char *);
+Scalar * createScalar (ScalarType, char *, int);
+Scalar * createScalarDup (ScalarType, const char *, int);
 void printScalar (const Scalar *);
 
 #endif // SCALAR_H

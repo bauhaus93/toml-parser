@@ -17,12 +17,12 @@ void printTable (const Table * table)
 	case TABLE_SIMPLE:
 		printf ("[");
 		printKey (table->key);
-		printf ("]");
+		printf ("] (%d)", table->key->name->line);
 		break;
 	case TABLE_ARRAY:
 		printf ("[[");
 		printKey (table->key);
-		printf ("]]");
+		printf ("]] (%d)", table->key->name->line);
 		break;
 	default:
 		assert (0);

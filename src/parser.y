@@ -107,12 +107,12 @@ Expression	:	COMMENT { $$ = expressionFromComment($1); }
 		|	Table COMMENT {
 				Expression * t = expressionFromTable($1);
 				Expression * c = expressionFromComment($2);
-				$$ = pushExpression(t, c);
+				$$ = pushExpression(c, t);
 			}
 		|	KeyPair COMMENT {
 				Expression * k = expressionFromKeyPair($1);
 				Expression * c = expressionFromComment($2);
-				$$ = pushExpression(k, c);
+				$$ = pushExpression(c, k);
 			}
 		;
 

@@ -1,7 +1,5 @@
 #include "value.h"
 
-static const char * getType (const Value * value);
-
 Value * valueFromScalar (Scalar * scalar)
 {
 	assert (scalar != NULL);
@@ -42,7 +40,6 @@ void addComment (Value * value, Scalar * comment)
 
 void printValue (const Value * value)
 {
-	printf ("VALUE/%s", getType (value));
 	switch (value->type)
 	{
 	case VALUE_SCALAR:
@@ -54,22 +51,6 @@ void printValue (const Value * value)
 	case VALUE_INLINE_TABLE:
 		printInlineTable (value->data.table);
 		break;
-	default:
-		assert (0);
-	}
-}
-
-static const char * getType (const Value * value)
-{
-	assert (value != NULL);
-	switch (value->type)
-	{
-	case VALUE_SCALAR:
-		return "SCALAR";
-	case VALUE_ARRAY:
-		return "ARRAY";
-	case VALUE_INLINE_TABLE:
-		return "INLINE_TABLE";
 	default:
 		assert (0);
 	}

@@ -32,9 +32,16 @@ Expression * expressionFromKeyPair (KeyPair * keyPair)
 
 Expression * pushExpression (Expression * top, Expression * element)
 {
-	if (element == NULL)
+	assert (element != NULL);
+	if (element->next != NULL)
 	{
-		return top;
+		Expression * newTop = element;
+		while (element->next != NULL)
+		{
+			element = element->next;
+		}
+		element->next = top;
+		return newTop;
 	}
 	else
 	{

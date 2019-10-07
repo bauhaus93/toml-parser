@@ -107,65 +107,68 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 "#" {
 	char* str = readComment();
 	unput('\n');
-	yylval.scalar = createScalar(SCALAR_STRING_COMMENT, str);
+	yylval.scalar = createScalar(SCALAR_STRING_COMMENT, str, yylineno);
 	return COMMENT;
 }
 
 "'" {
 	char* str = readLiteral();
-	yylval.scalar = createScalar(SCALAR_STRING_LITERAL, str);
+	yylval.scalar = createScalar(SCALAR_STRING_LITERAL, str, yylineno);
 	return LITERAL_STRING;
 }
 
 "'''" {
+	int lineStart = yylineno;
 	char* str = readMultilineLiteral();
-	yylval.scalar = createScalar(SCALAR_STRING_ML_LITERAL, str);
+	yylval.scalar = createScalar(SCALAR_STRING_ML_LITERAL, str, lineStart);
 	return MULTI_LITERAL_STRING;
 }
 
 "\"" {
+	int lineStart = yylineno;
 	char* str = readBasic();
-	yylval.scalar = createScalar(SCALAR_STRING_BASIC, str);
+	yylval.scalar = createScalar(SCALAR_STRING_BASIC, str, lineStart);
 	return BASIC_STRING;
 }
 
 "\"\"\"" {
+	int lineStart = yylineno;
 	char* str = readMultilineBasic();
-	yylval.scalar = createScalar(SCALAR_STRING_ML_BASIC, str);
+	yylval.scalar = createScalar(SCALAR_STRING_ML_BASIC, str, lineStart);
 	return MULTI_BASIC_STRING;
 }
 
 <RHS,IN_BRACKETS>{decimal_pm} {
-	yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext);
+	yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext, yylineno);
 	return DECIMAL;
 }
 
 <RHS,IN_BRACKETS>("+"|"-")?"0" {
-	yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext);
+	yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext, yylineno);
 	return DECIMAL;
 }
 
 <RHS,IN_BRACKETS>"0x"{hex_char}("_"?{hex_char})* {
-	yylval.scalar = createScalarDup(SCALAR_INTEGER_HEX, yytext);
+	yylval.scalar = createScalarDup(SCALAR_INTEGER_HEX, yytext, yylineno);
 	return HEXADECIMAL;
 }
 
 <RHS,IN_BRACKETS>"0o"{oct_char}("_"?{oct_char})* {
-	yylval.scalar = createScalarDup(SCALAR_INTEGER_OCT, yytext);
+	yylval.scalar = createScalarDup(SCALAR_INTEGER_OCT, yytext, yylineno);
 	return OCTAL;
 }
 
 <RHS,IN_BRACKETS>"0b"{bin_char}("_"?{bin_char})* {
-	yylval.scalar = createScalarDup(SCALAR_INTEGER_BIN, yytext);
+	yylval.scalar = createScalarDup(SCALAR_INTEGER_BIN, yytext, yylineno);
 	return BINARY;
 }
 
 <RHS,IN_BRACKETS>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
-	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
+	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext, yylineno);
 	return FLOAT;
 }
 <RHS,IN_BRACKETS>("+"|"-")?"inf" {
-	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
+	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext, yylineno);
 	switch(yytext[0]) {
 		case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_INF; break;
 		case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_INF; break;
@@ -174,7 +177,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 	return FLOAT;
 }
 <RHS,IN_BRACKETS>("+"|"-")?"nan" {
-	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
+	yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext, yylineno);
 	switch(yytext[0]) {
 		case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_NAN; break;
 		case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_NAN; break;
@@ -184,29 +187,29 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 }
 
 <RHS,IN_BRACKETS>{offset_datetime} {
-	yylval.scalar = createScalarDup(SCALAR_DATE_OFFSET_DATETIME, yytext);
+	yylval.scalar = createScalarDup(SCALAR_DATE_OFFSET_DATETIME, yytext, yylineno);
 	return OFFSET_DATETIME;
 }
 <RHS,IN_BRACKETS>{local_datetime} {
-	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATETIME, yytext);
+	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATETIME, yytext, yylineno);
 	return LOCAL_DATETIME;
 }
 <RHS,IN_BRACKETS>{local_date} {
-	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATE, yytext);
+	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATE, yytext, yylineno);
 	return LOCAL_DATE;
 }
 <RHS,IN_BRACKETS>{local_time} {
-	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_TIME, yytext);
+	yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_TIME, yytext, yylineno);
 	return LOCAL_TIME;
 }
 
 <RHS,IN_BRACKETS>"true"|"false" {
-	yylval.scalar = createScalarDup(SCALAR_BOOLEAN, yytext);
+	yylval.scalar = createScalarDup(SCALAR_BOOLEAN, yytext, yylineno);
 	return BOOLEAN;
 }
 
 <INITIAL,IN_BRACKETS,IN_CURLY>{bare_char}+ {
-	yylval.scalar = createScalarDup(SCALAR_STRING_BARE, yytext);
+	yylval.scalar = createScalarDup(SCALAR_STRING_BARE, yytext, yylineno);
 	return BARE_STRING;
 }
 
