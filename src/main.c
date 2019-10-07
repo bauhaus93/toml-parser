@@ -2,7 +2,7 @@
 
 extern int yyparse ();
 
-int main (int argc, char ** argv)
+int main ()
 {
 	yyparse ();
 	return 0;

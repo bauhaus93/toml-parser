@@ -5,13 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef INLINE_TABLE_DEFINED
+typedef struct _InlineTable InlineTable;
+#define INLINE_TABLE_DEFINED
+#endif
+
 #include "key_pair.h"
 
-typedef struct _InlineTable
+struct _InlineTable
 {
 	KeyPair * pair;
 	struct _InlineTable * next;
-} InlineTable;
+};
 
 InlineTable * pushPair (InlineTable *, KeyPair *);
 InlineTable * inlineTableFromKeyPair (KeyPair *);

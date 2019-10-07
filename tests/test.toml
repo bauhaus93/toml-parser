@@ -105,3 +105,8 @@ sls
 sers
 beidl""", z = """
 hui"""}
+
+[[table.array]]
+ay = 5
+[[table.array]]
+ay = 7

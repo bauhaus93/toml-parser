@@ -9,7 +9,7 @@
 
 typedef enum
 {
-	TABLE_STANDARD,
+	TABLE_SIMPLE,
 	TABLE_ARRAY
 } TableType;
 
@@ -20,5 +20,6 @@ typedef struct
 } Table;
 
 Table * createTable (TableType, Key *);
+void printTable (const Table * table);
 
 #endif // TABLE_H

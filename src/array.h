@@ -5,13 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef ARRAY_DEFINED
+typedef struct _Array Array;
+#define ARRAY_DEFINED
+#endif
+
 #include "value.h"
 
-typedef struct _Array
+struct _Array
 {
 	Value * element;
 	struct _Array * next;
-} Array;
+};
 
 Array * pushValue (Array *, Value *);
 Array * arrayFromValue (Value *);

@@ -6,4 +6,25 @@ Table * createTable (TableType type, Key * key)
 	Table * table = malloc (sizeof (Table));
 	table->type = type;
 	table->key = key;
+	return table;
+}
+
+void printTable (const Table * table)
+{
+	assert (table != NULL);
+	switch (table->type)
+	{
+	case TABLE_SIMPLE:
+		printf ("[");
+		printKey (table->key);
+		printf ("]");
+		break;
+	case TABLE_ARRAY:
+		printf ("[[");
+		printKey (table->key);
+		printf ("]]");
+		break;
+	default:
+		assert (0);
+	}
 }

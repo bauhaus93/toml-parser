@@ -77,6 +77,8 @@ extern int yyparse();
 %type <scalar> StringScalar
 %type <scalar> DateScalar
 %type <table> Table
+%type <table> TableSimple
+%type <table> TableArray
 %type <inlineTable> InlineTable
 
 %start TomlFile
@@ -95,7 +97,12 @@ Comment :
         |   COMMENT { printScalar($1); }
         ;
 
-Table   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); printKey($2); }
+Table	:	TableSimple { $$ = $1; }
+	|	TableArray { $$ = $1; }	
+
+TableSimple   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); printKey($2); printf("\n"); }
+
+TableArray	: BRACKETS_OPEN BRACKETS_OPEN Key BRACKETS_CLOSE BRACKETS_CLOSE { printf("[PARSER] table array: "); printKey($3); printf("\n"); }
 
 KeyPair    : Key EQUAL Value { $$ = makePair($1, $3); }
 

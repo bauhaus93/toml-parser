@@ -27,6 +27,8 @@ set(EXEC_NAME "toml_parser")
 add_executable(${EXEC_NAME} "")
 set_property(TARGET ${EXEC_NAME} PROPERTY C_STANDARD 99)
 
+target_compile_options(${EXEC_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+
 add_subdirectory(src)
 get_property(SRC_LIST TARGET ${EXEC_NAME} PROPERTY SRC_LIST)
 target_sources(${EXEC_NAME}

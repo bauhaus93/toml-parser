@@ -10,8 +10,15 @@
 // Break include cycle by forward declarations
 // #include "array.h"
 // #include "inline_table.h"
+
+#ifndef ARRAY_DEFINED
 typedef struct _Array Array;
+#define ARRAY_DEFINED
+#endif
+#ifndef INLINE_TABLE_DEFINED
 typedef struct _InlineTable InlineTable;
+#define INLINE_TABLE_DEFINED
+#endif
 
 typedef enum
 {
