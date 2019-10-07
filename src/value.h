@@ -35,11 +35,13 @@ typedef struct
 		Array * array;
 		InlineTable * table;
 	} data;
+	Scalar * comment;
 } Value;
 
 Value * valueFromScalar (Scalar *);
 Value * valueFromArray (Array *);
 Value * valueFromInlineTable (InlineTable *);
+void addComment (Value *, Scalar *);
 void printValue (const Value *);
 
 extern void printArray (const Array *);

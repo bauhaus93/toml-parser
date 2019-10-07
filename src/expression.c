@@ -6,6 +6,7 @@ Expression * expressionFromComment (Scalar * comment)
 	Expression * expr = malloc (sizeof (Expression));
 	expr->type = EXPRESSION_COMMENT;
 	expr->expr.comment = comment;
+	expr->next = NULL;
 	return expr;
 }
 
@@ -15,6 +16,7 @@ Expression * expressionFromTable (Table * table)
 	Expression * expr = malloc (sizeof (Expression));
 	expr->type = EXPRESSION_TABLE;
 	expr->expr.table = table;
+	expr->next = NULL;
 	return expr;
 }
 
@@ -24,7 +26,30 @@ Expression * expressionFromKeyPair (KeyPair * keyPair)
 	Expression * expr = malloc (sizeof (Expression));
 	expr->type = EXPRESSION_KEY_PAIR;
 	expr->expr.keyPair = keyPair;
+	expr->next = NULL;
 	return expr;
+}
+
+Expression * pushExpression (Expression * top, Expression * element)
+{
+	if (element == NULL)
+	{
+		return top;
+	}
+	else
+	{
+		element->next = top;
+		return element;
+	}
+}
+
+void printExpressions (const Expression * expr)
+{
+	printExpression (expr);
+	if (expr->next != NULL)
+	{
+		printExpressions (expr->next);
+	}
 }
 
 void printExpression (const Expression * expr)

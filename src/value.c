@@ -8,6 +8,7 @@ Value * valueFromScalar (Scalar * scalar)
 	Value * val = malloc (sizeof (Value));
 	val->type = VALUE_SCALAR;
 	val->data.scalar = scalar;
+	val->comment = NULL;
 	return val;
 }
 
@@ -17,6 +18,7 @@ Value * valueFromArray (Array * array)
 	Value * val = malloc (sizeof (Value));
 	val->type = VALUE_ARRAY;
 	val->data.array = array;
+	val->comment = NULL;
 	return val;
 }
 
@@ -26,7 +28,16 @@ Value * valueFromInlineTable (InlineTable * table)
 	Value * val = malloc (sizeof (Value));
 	val->type = VALUE_INLINE_TABLE;
 	val->data.table = table;
+	val->comment = NULL;
 	return val;
+}
+
+void addComment (Value * value, Scalar * comment)
+{
+	assert (value != NULL);
+	assert (comment != NULL);
+	assert (value->comment == NULL);
+	value->comment = comment;
 }
 
 void printValue (const Value * value)

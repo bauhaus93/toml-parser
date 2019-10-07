@@ -22,9 +22,9 @@ bin_1 = 0b00000
 bin_2 = 0b10101_00
 bin_3 = 0b10_0_1_0
 
-float_1 = 3.4534
-float_2 = 5_333_333e-3
-float_3 = -3_33_4E-4_000_3
+float_1 = 3.4534	# hello
+float_2 = 5_333_333e-3 	#grüß gott
+float_3 = -3_33_4E-4_000_3 #zers
 float_4 = inf
 float_5 = -inf
 float_6 = +inf
@@ -86,16 +86,16 @@ lt1 = 07:32:00
 lt2 = 00:32:00.999999
 
 array_1 = [ "HANS", "du", "BEIDL" ]
-array_2 = [ 1337,
-913,
-11121
+array_2 = [ 1337, # comment in array
+913,	# another comment in array
+11121	# anotherer comment in array
 ]
 
 ["I'm".a.'kewl.TABLE']
 
 "inline" = { x = 3, y = 4, z = 5 }
 
-"inline_with_arrays" = { a = [1,2,3,4], b = [6,6,6], c = [1,3,3,7]}
+"inline_with_arrays" = { a = [1,2,3,4], b = [6,6,6], c = [1,3,3,7]} # hallo
 "inline_with_multiline" = { x = """
 sls
 1

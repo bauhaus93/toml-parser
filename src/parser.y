@@ -15,28 +15,29 @@
 #include "inline_table.h"
 
 extern int yylex();
-extern int yyparse();
 
 %}
 
 %code requires {
-    #include "key_pair.h"
-    #include "key.h"
-    #include "value.h"
-    #include "array.h"
-    #include "scalar.h"
-    #include "table.h"
-    #include "inline_table.h"
+	#include "expression.h"
+	#include "key_pair.h"
+	#include "key.h"
+	#include "value.h"
+	#include "array.h"
+	#include "scalar.h"
+	#include "table.h"
+	#include "inline_table.h"
 }
 
 %union {
-    KeyPair*            keyPair;
-    Key*                key;
-    Value*              value;
-    Array*              array;
-    Scalar*             scalar;
-    Table*              table;
-    InlineTable*        inlineTable;
+	Expression*	expression;
+	KeyPair*    	keyPair;
+	Key*        	key;
+	Value*      	value;
+	Array*      	array;
+	Scalar*     	scalar;
+	Table*      	table;
+	InlineTable*	inlineTable;
 }
 
 %token <scalar> COMMENT
@@ -56,6 +57,7 @@ extern int yyparse();
 %token <scalar> LOCAL_DATETIME
 %token <scalar> LOCAL_DATE
 %token <scalar> LOCAL_TIME
+%token NEWLINE
 %token EQUAL
 %token DOT
 %token COMMA
@@ -64,6 +66,9 @@ extern int yyparse();
 %token CURLY_OPEN
 %token CURLY_CLOSE
 
+%type <expression> TomlFile
+%type <expression> Expressions
+%type <expression> Expression
 %type <keyPair> KeyPair
 %type <key> Key
 %type <key> SimpleKey
@@ -83,52 +88,73 @@ extern int yyparse();
 
 %start TomlFile
 
+%parse-param { Expression** root }
+
+%define parse.error verbose
+
 %%
 
-TomlFile   : Lines
+TomlFile   : 	Expressions { $$ = $1; *root = $$; }
 
-Lines   :
-        | COMMENT Lines { printScalar($1); printf("\n"); }
-        | Table Comment Lines
-        | KeyPair Comment Lines { printKeyPair($1); printf("\n"); }
-        ;
+Expressions	: 	NEWLINE Expressions { $$ = $2; }
+		|	Expression NEWLINE Expressions { $$ = pushExpression($3, $1); }
+		|	{ $$ = NULL; }	
+		;
 
-Comment :
-        |   COMMENT { printScalar($1); }
-        ;
+Expression	:	COMMENT { $$ = expressionFromComment($1); }
+		| 	Table { $$ = expressionFromTable($1); }
+		| 	KeyPair { $$ = expressionFromKeyPair($1); }
+		|	Table COMMENT {
+				Expression * t = expressionFromTable($1);
+				Expression * c = expressionFromComment($2);
+				$$ = pushExpression(t, c);
+			}
+		|	KeyPair COMMENT {
+				Expression * k = expressionFromKeyPair($1);
+				Expression * c = expressionFromComment($2);
+				$$ = pushExpression(k, c);
+			}
+		;
 
 Table	:	TableSimple { $$ = $1; }
 	|	TableArray { $$ = $1; }	
+	;
 
-TableSimple   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); printKey($2); printf("\n"); }
+TableSimple	:	BRACKETS_OPEN Key BRACKETS_CLOSE { $$ = createTable(TABLE_SIMPLE, $2); }
+		;
 
-TableArray	: BRACKETS_OPEN BRACKETS_OPEN Key BRACKETS_CLOSE BRACKETS_CLOSE { printf("[PARSER] table array: "); printKey($3); printf("\n"); }
+TableArray	:	BRACKETS_OPEN BRACKETS_OPEN Key BRACKETS_CLOSE BRACKETS_CLOSE { $$ = createTable(TABLE_ARRAY, $3); }
+		;
+KeyPair	:	Key EQUAL Value { $$ = makePair($1, $3); }
 
-KeyPair    : Key EQUAL Value { $$ = makePair($1, $3); }
-
-Key     :   SimpleKey { $$ = $1; }
-        |   DottedKey { $$ = $1; }
+Key     :   	SimpleKey { $$ = $1; }
+        |   	DottedKey { $$ = $1; }
         ;
 
-SimpleKey   :   BARE_STRING { $$ = keyFromScalar($1); }
-            |   LITERAL_STRING { $$ = keyFromScalar($1); }
-            |   BASIC_STRING { $$ = keyFromScalar($1); }
-            ;
+SimpleKey	:	BARE_STRING { $$ = keyFromScalar($1); }
+            	|	LITERAL_STRING { $$ = keyFromScalar($1); }
+            	|	BASIC_STRING { $$ = keyFromScalar($1); }
+            	;
 
-DottedKey   :   SimpleKey DOT Key { appendKey($1, $3); $$ = $1; }
-
-
-Value   :   Scalar { $$ = valueFromScalar($1); }
-        |   CURLY_OPEN InlineTable CURLY_CLOSE { $$ = valueFromInlineTable($2); }
-        |   BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = valueFromArray($2); }
+DottedKey	:	SimpleKey DOT Key { appendKey($1, $3); $$ = $1; }
 
 
-InlineTable :   KeyPair COMMA InlineTable { $$ = pushPair($3, $1); }
-            |   KeyPair { $$ = inlineTableFromKeyPair($1); }
+Value   :	Scalar { $$ = valueFromScalar($1); }
+        |	CURLY_OPEN InlineTable CURLY_CLOSE { $$ = valueFromInlineTable($2); }
+        |	BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = valueFromArray($2); }
 
 
-Array   :   Value COMMA Array { $$ = pushValue($3, $1); }
-        |   Value { $$ = arrayFromValue($1); }
+InlineTable	:	KeyPair COMMA InlineTable { $$ = pushPair($3, $1); }
+            	|	KeyPair { $$ = inlineTableFromKeyPair($1); }
+		;
+
+
+Array   :	Value COMMA NEWLINE Array { $$ = pushValue($4, $1); }
+	|	Value COMMA COMMENT NEWLINE Array { $$ = pushValue($5, $1); addComment($1, $3); }	
+	|	Value COMMA Array { $$ = pushValue($3, $1); }
+        |	Value NEWLINE { $$ = arrayFromValue($1); }
+        |	Value COMMENT NEWLINE { $$ = arrayFromValue($1); addComment($1, $2); }
+        |	Value { $$ = arrayFromValue($1); }
 
 Scalar  :   IntegerScalar { $$ = $1; }
         |   BooleanScalar { $$ = $1; }

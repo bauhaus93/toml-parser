@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int yyerror (const char * msg);
+#include "expression.h"
+
+int yyerror (Expression ** root, const char * msg);
 
 #endif // ERROR_H

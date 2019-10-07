@@ -1,4 +1,6 @@
 add_sources(main.c
+	    expression.h
+	    expression.c
 	    key_pair.h
 	    key_pair.c
 	    key.h
@@ -9,9 +11,9 @@ add_sources(main.c
 	    scalar.c
 	    array.h
 	    array.c
-        table.h
-        table.c
-        inline_table.h
-        inline_table.c
+	    table.h
+	    table.c
+	    inline_table.h
+	    inline_table.c
 	    error.h
 	    error.c)

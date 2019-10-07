@@ -1,9 +1,13 @@
 #include <stdio.h>
 
-extern int yyparse ();
+#include "expression.h"
+
+extern int yyparse (Expression **);
 
 int main ()
 {
-	yyparse ();
+	Expression * root = NULL;
+	yyparse (&root);
+	printExpressions(root);
 	return 0;
 }
