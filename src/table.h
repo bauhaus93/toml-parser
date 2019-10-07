@@ -19,6 +19,6 @@ typedef struct
 	Key * key;
 } Table;
 
-Table * create_table (TableType, Key *);
+Table * createTable (TableType, Key *);
 
 #endif // TABLE_H

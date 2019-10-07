@@ -38,8 +38,8 @@ typedef struct
 	char * str;
 } Scalar;
 
-Scalar * create_scalar (ScalarType, char *);
-Scalar * create_scalar_dup (ScalarType, const char *);
-void print_scalar (const Scalar *);
+Scalar * createScalar (ScalarType, char *);
+Scalar * createScalarDup (ScalarType, const char *);
+void printScalar (const Scalar *);
 
 #endif // SCALAR_H

@@ -13,9 +13,9 @@ typedef struct _Array
 	struct _Array * next;
 } Array;
 
-Array * push_value (Array *, Value *);
-Array * array_from_value (Value *);
+Array * pushValue (Array *, Value *);
+Array * arrayFromValue (Value *);
 
-void print_array (const Array *);
+void printArray (const Array *);
 
 #endif // ARRAY_H

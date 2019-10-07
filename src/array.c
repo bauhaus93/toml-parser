@@ -1,8 +1,8 @@
 #include "array.h"
 
-static void print_array_element (const Array *);
+static void printArrayElement (const Array *);
 
-Array * array_from_value (Value * value)
+Array * arrayFromValue (Value * value)
 {
 	Array * array = malloc (sizeof (Array));
 	array->element = value;
@@ -10,30 +10,30 @@ Array * array_from_value (Value * value)
 	return array;
 }
 
-Array * push_value (Array * root, Value * value)
+Array * pushValue (Array * root, Value * value)
 {
 	assert (root != NULL);
 	assert (value != NULL);
-	Array * a = array_from_value (value);
+	Array * a = arrayFromValue (value);
 	a->next = root;
 	return a;
 }
 
-void print_array (const Array * array)
+void printArray (const Array * array)
 {
 	assert (array != NULL);
 	printf (" [ ");
-	print_array_element (array);
+	printArrayElement (array);
 	printf (" ] ");
 }
 
-static void print_array_element (const Array * array)
+static void printArrayElement (const Array * array)
 {
 	assert (array != NULL);
-	print_value (array->element);
+	printValue (array->element);
 	if (array->next != NULL)
 	{
 		printf (", ");
-		print_array_element (array->next);
+		printArrayElement (array->next);
 	}
 }

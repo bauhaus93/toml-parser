@@ -14,7 +14,7 @@ typedef struct
 	Value * value;
 } KeyPair;
 
-KeyPair * make_pair (Key *, Value *);
-void print_key_pair (const KeyPair *);
+KeyPair * makePair (Key *, Value *);
+void printKeyPair (const KeyPair *);
 
 #endif // KEY_PAIR_H

@@ -30,12 +30,12 @@ typedef struct
 	} data;
 } Value;
 
-Value * value_from_scalar (Scalar *);
-Value * value_from_array (Array *);
-Value * value_from_inline_table (InlineTable *);
-void print_value (const Value *);
+Value * valueFromScalar (Scalar *);
+Value * valueFromArray (Array *);
+Value * valueFromInlineTable (InlineTable *);
+void printValue (const Value *);
 
-extern void print_array (const Array *);
-extern void print_inline_table (const InlineTable *);
+extern void printArray (const Array *);
+extern void printInlineTable (const InlineTable *);
 
 #endif // VALUE_H

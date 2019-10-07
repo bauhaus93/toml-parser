@@ -1,30 +1,32 @@
 #include "scalar.h"
 
-static const char * get_type (const Scalar * scalar);
+static const char * getType (const Scalar * scalar);
 
-Scalar * create_scalar (ScalarType type, char * scalar_string)
+Scalar * createScalar (ScalarType type, char * scalarString)
 {
-	assert (scalar_string != NULL);
+	assert (scalarString != NULL);
 	Scalar * scalar = malloc (sizeof (Scalar));
 	scalar->type = type;
-	scalar->str = scalar_string;
+	scalar->str = scalarString;
 	return scalar;
 }
 
-Scalar * create_scalar_dup (ScalarType type, const char * scalar_string)
+Scalar * createScalarDup (ScalarType type, const char * scalarString)
 {
-	assert (scalar_string != NULL);
+	assert (scalarString != NULL);
 	Scalar * scalar = malloc (sizeof (Scalar));
 	scalar->type = type;
-	scalar->str = strdup (scalar_string);
+	scalar->str = strdup (scalarString);
 	return scalar;
 }
-void print_scalar (const Scalar * scalar)
+
+void printScalar (const Scalar * scalar)
 {
 	assert (scalar != NULL);
-	printf ("/%s = '%s'", get_type (scalar), scalar->str);
+	printf ("/%s = '%s'", getType (scalar), scalar->str);
 }
-static const char * get_type (const Scalar * scalar)
+
+static const char * getType (const Scalar * scalar)
 {
 	switch (scalar->type)
 	{

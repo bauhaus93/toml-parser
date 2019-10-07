@@ -1,8 +1,8 @@
 #include "value.h"
 
-static const char * get_type (const Value * value);
+static const char * getType (const Value * value);
 
-Value * value_from_scalar (Scalar * scalar)
+Value * valueFromScalar (Scalar * scalar)
 {
 	assert (scalar != NULL);
 	Value * val = malloc (sizeof (Value));
@@ -11,7 +11,7 @@ Value * value_from_scalar (Scalar * scalar)
 	return val;
 }
 
-Value * value_from_array (Array * array)
+Value * valueFromArray (Array * array)
 {
 	assert (array != NULL);
 	Value * val = malloc (sizeof (Value));
@@ -20,7 +20,7 @@ Value * value_from_array (Array * array)
 	return val;
 }
 
-Value * value_from_inline_table (InlineTable * table)
+Value * valueFromInlineTable (InlineTable * table)
 {
 	assert (table != NULL);
 	Value * val = malloc (sizeof (Value));
@@ -29,26 +29,26 @@ Value * value_from_inline_table (InlineTable * table)
 	return val;
 }
 
-void print_value (const Value * value)
+void printValue (const Value * value)
 {
-	printf ("VALUE/%s", get_type (value));
+	printf ("VALUE/%s", getType (value));
 	switch (value->type)
 	{
 	case VALUE_SCALAR:
-		print_scalar (value->data.scalar);
+		printScalar (value->data.scalar);
 		break;
 	case VALUE_ARRAY:
-		print_array (value->data.array);
+		printArray (value->data.array);
 		break;
 	case VALUE_INLINE_TABLE:
-		print_inline_table (value->data.table);
+		printInlineTable (value->data.table);
 		break;
 	default:
 		assert (0);
 	}
 }
 
-static const char * get_type (const Value * value)
+static const char * getType (const Value * value)
 {
 	assert (value != NULL);
 	switch (value->type)

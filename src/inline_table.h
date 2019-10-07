@@ -13,9 +13,9 @@ typedef struct _InlineTable
 	struct _InlineTable * next;
 } InlineTable;
 
-InlineTable * push_pair (InlineTable *, KeyPair *);
-InlineTable * inline_table_from_key_pair (KeyPair *);
+InlineTable * pushPair (InlineTable *, KeyPair *);
+InlineTable * inlineTableFromKeyPair (KeyPair *);
 
-void print_inline_table (const InlineTable * table);
+void printInlineTable (const InlineTable * table);
 
 #endif // INLINE_TABLE_H

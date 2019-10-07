@@ -30,13 +30,13 @@ extern int yyparse();
 }
 
 %union {
-    KeyPair*            key_pair;
+    KeyPair*            keyPair;
     Key*                key;
     Value*              value;
     Array*              array;
     Scalar*             scalar;
     Table*              table;
-    InlineTable*        inline_table;
+    InlineTable*        inlineTable;
 }
 
 %token <scalar> COMMENT
@@ -64,7 +64,7 @@ extern int yyparse();
 %token CURLY_OPEN
 %token CURLY_CLOSE
 
-%type <key_pair> KeyPair
+%type <keyPair> KeyPair
 %type <key> Key
 %type <key> SimpleKey
 %type <key> DottedKey
@@ -77,8 +77,7 @@ extern int yyparse();
 %type <scalar> StringScalar
 %type <scalar> DateScalar
 %type <table> Table
-%type <inline_table> InlineTable
-
+%type <inlineTable> InlineTable
 
 %start TomlFile
 
@@ -87,42 +86,42 @@ extern int yyparse();
 TomlFile   : Lines
 
 Lines   :
-        | COMMENT Lines { print_scalar($1); printf("\n"); }
+        | COMMENT Lines { printScalar($1); printf("\n"); }
         | Table Comment Lines
-        | KeyPair Comment Lines { print_key_pair($1); printf("\n"); }
+        | KeyPair Comment Lines { printKeyPair($1); printf("\n"); }
         ;
 
 Comment :
-        |   COMMENT { print_scalar($1); }
+        |   COMMENT { printScalar($1); }
         ;
 
-Table   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); print_key($2); }
+Table   :   BRACKETS_OPEN Key BRACKETS_CLOSE { printf("[PARSER] table: "); printKey($2); }
 
-KeyPair    : Key EQUAL Value { $$ = make_pair($1, $3); }
+KeyPair    : Key EQUAL Value { $$ = makePair($1, $3); }
 
 Key     :   SimpleKey { $$ = $1; }
         |   DottedKey { $$ = $1; }
         ;
 
-SimpleKey   :   BARE_STRING { $$ = key_from_scalar($1); }
-            |   LITERAL_STRING { $$ = key_from_scalar($1); }
-            |   BASIC_STRING { $$ = key_from_scalar($1); }
+SimpleKey   :   BARE_STRING { $$ = keyFromScalar($1); }
+            |   LITERAL_STRING { $$ = keyFromScalar($1); }
+            |   BASIC_STRING { $$ = keyFromScalar($1); }
             ;
 
-DottedKey   :   SimpleKey DOT Key { append_key($1, $3); $$ = $1; }
+DottedKey   :   SimpleKey DOT Key { appendKey($1, $3); $$ = $1; }
 
 
-Value   :   Scalar { $$ = value_from_scalar($1); }
-        |   CURLY_OPEN InlineTable CURLY_CLOSE { $$ = value_from_inline_table($2); }
-        |   BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = value_from_array($2); }
+Value   :   Scalar { $$ = valueFromScalar($1); }
+        |   CURLY_OPEN InlineTable CURLY_CLOSE { $$ = valueFromInlineTable($2); }
+        |   BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = valueFromArray($2); }
 
 
-InlineTable :   KeyPair COMMA InlineTable { $$ = push_pair($3, $1); }
-            |   KeyPair { $$ = inline_table_from_key_pair($1); }
+InlineTable :   KeyPair COMMA InlineTable { $$ = pushPair($3, $1); }
+            |   KeyPair { $$ = inlineTableFromKeyPair($1); }
 
 
-Array   :   Value COMMA Array { $$ = push_value($3, $1); }
-        |   Value { $$ = array_from_value($1); }
+Array   :   Value COMMA Array { $$ = pushValue($3, $1); }
+        |   Value { $$ = arrayFromValue($1); }
 
 Scalar  :   IntegerScalar { $$ = $1; }
         |   BooleanScalar { $$ = $1; }

@@ -1,6 +1,6 @@
 #include "table.h"
 
-Table * create_table (TableType type, Key * key)
+Table * createTable (TableType type, Key * key)
 {
 	assert (key != NULL);
 	Table * table = malloc (sizeof (Table));

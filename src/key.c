@@ -1,8 +1,8 @@
 #include "key.h"
 
-static void print_sub_key (const Key * key);
+static void printSubKey (const Key * key);
 
-Key * key_from_scalar (Scalar * scalar)
+Key * keyFromScalar (Scalar * scalar)
 {
 	assert (scalar->type == SCALAR_STRING_BASIC || scalar->type == SCALAR_STRING_LITERAL || scalar->type == SCALAR_STRING_BARE);
 	Key * key = malloc (sizeof (Key));
@@ -11,7 +11,7 @@ Key * key_from_scalar (Scalar * scalar)
 	return key;
 }
 
-void append_key (Key * base, Key * appendant)
+void appendKey (Key * base, Key * appendant)
 {
 	assert (base != NULL);
 	assert (appendant != NULL);
@@ -19,20 +19,20 @@ void append_key (Key * base, Key * appendant)
 	base->descendant = appendant;
 }
 
-void print_key (const Key * key)
+void printKey (const Key * key)
 {
 	printf ("%s", key->name->str);
 	if (key->descendant != NULL)
 	{
-		print_sub_key (key->descendant);
+		printSubKey (key->descendant);
 	}
 }
 
-static void print_sub_key (const Key * key)
+static void printSubKey (const Key * key)
 {
 	printf (".%s", key->name->str);
 	if (key->descendant != NULL)
 	{
-		print_sub_key (key->descendant);
+		printSubKey (key->descendant);
 	}
 }

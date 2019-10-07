@@ -7,28 +7,27 @@
 #include "parser.h"
 #include "scalar.h"
 
-static char* read_literal(void);
-static char* read_basic(void);
-static char* read_multiline_literal(void);
-static char* read_multiline_basic(void);
-static char* read_comment(void);
+static char* readLiteral(void);
+static char* readBasic(void);
+static char* readMultilineLiteral(void);
+static char* readMultilineBasic(void);
+static char* readComment(void);
 
-static void append_char(char**, size_t*, size_t*, char);
-static void read_non_ascii_char(char**, size_t*, size_t*);
-static void read_hex(char**, size_t*, size_t*, size_t);
-static int is_hex(char);
-
+static void appendChar(char**, size_t*, size_t*, char);
+static void readNonAsciiChar(char**, size_t*, size_t*);
+static void readHex(char**, size_t*, size_t*, size_t);
+static int isHex(char);
 
 typedef struct _ConditionStack {
     int condition;
     struct _ConditionStack* next;
 } ConditionStack;
 
-static ConditionStack* stack_root = NULL;
+static ConditionStack* stackRoot = NULL;
 
-static void push_condition(int);
-static void pop_condition(void);
-static inline void pop_condition_if(int);
+static void pushCondition(int);
+static void popCondition(void);
+static inline void popConditionIf(int);
 
 %}
 
@@ -71,7 +70,7 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 %%
 
 "=" {
-    push_condition(RHS);
+    pushCondition(RHS);
     return EQUAL;
 }
 
@@ -79,144 +78,144 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 "," return COMMA;
 
 "[" {
-    push_condition(IN_BRACKETS);
+    pushCondition(IN_BRACKETS);
     return BRACKETS_OPEN;
 }
 "]" {
-    pop_condition();
-    pop_condition_if(RHS);
+    popCondition();
+    popConditionIf(RHS);
     return BRACKETS_CLOSE;
 }
 
 "{" {
-    push_condition(IN_CURLY);
+    pushCondition(IN_CURLY);
     return CURLY_OPEN;
 }
 "}" {
-    pop_condition();
-    pop_condition_if(RHS);
+    popCondition();
+    popConditionIf(RHS);
     return CURLY_CLOSE;
 }
 
 "#" {
-    char* str = read_comment();
-    yylval.scalar = create_scalar(SCALAR_STRING_COMMENT, str);
+    char* str = readComment();
+    yylval.scalar = createScalar(SCALAR_STRING_COMMENT, str);
     return COMMENT;
 }
 
 "'" {
-    char* str = read_literal();
-    yylval.scalar = create_scalar(SCALAR_STRING_LITERAL, str);
-    pop_condition_if(RHS);
+    char* str = readLiteral();
+    yylval.scalar = createScalar(SCALAR_STRING_LITERAL, str);
+    popConditionIf(RHS);
     return LITERAL_STRING;
 }
 
 "'''" {
-    char* str = read_multiline_literal();
-    yylval.scalar = create_scalar(SCALAR_STRING_ML_LITERAL, str);
-    pop_condition_if(RHS);
+    char* str = readMultilineLiteral();
+    yylval.scalar = createScalar(SCALAR_STRING_ML_LITERAL, str);
+    popConditionIf(RHS);
     return MULTI_LITERAL_STRING;
 }
 
 "\"" {
-    char* str = read_basic();
-    yylval.scalar = create_scalar(SCALAR_STRING_BASIC, str);
-    pop_condition_if(RHS);
+    char* str = readBasic();
+    yylval.scalar = createScalar(SCALAR_STRING_BASIC, str);
+    popConditionIf(RHS);
     return BASIC_STRING;
 }
 
 "\"\"\"" {
-    char* str = read_multiline_basic();
-    yylval.scalar = create_scalar(SCALAR_STRING_ML_BASIC, str);
-    pop_condition_if(RHS);
+    char* str = readMultilineBasic();
+    yylval.scalar = createScalar(SCALAR_STRING_ML_BASIC, str);
+    popConditionIf(RHS);
     return MULTI_BASIC_STRING;
 }
 
 <RHS,IN_BRACKETS>{decimal_pm} {
-    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext);
+    popConditionIf(RHS);
     return DECIMAL;
 }
 
 <RHS,IN_BRACKETS>("+"|"-")?"0" {
-    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_DEC, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_INTEGER_DEC, yytext);
+    popConditionIf(RHS);
     return DECIMAL;
 }
 
 <RHS,IN_BRACKETS>"0x"{hex_char}("_"?{hex_char})* {
-    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_HEX, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_INTEGER_HEX, yytext);
+    popConditionIf(RHS);
     return HEXADECIMAL;
 }
 
 <RHS,IN_BRACKETS>"0o"{oct_char}("_"?{oct_char})* {
-    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_OCT, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_INTEGER_OCT, yytext);
+    popConditionIf(RHS);
     return OCTAL;
 }
 
 <RHS,IN_BRACKETS>"0b"{bin_char}("_"?{bin_char})* {
-    yylval.scalar = create_scalar_dup(SCALAR_INTEGER_BIN, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_INTEGER_BIN, yytext);
+    popConditionIf(RHS);
     return BINARY;
 }
 
 <RHS,IN_BRACKETS>{decimal_pm}("."{decimal})?([eE]{decimal_pm})? {
-    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
+    popConditionIf(RHS);
     return FLOAT;
 }
 <RHS,IN_BRACKETS>("+"|"-")?"inf" {
-    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
+    yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
         case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_INF; break;
         case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_INF; break;
         default:    yylval.scalar->type = SCALAR_FLOAT_INF;     break;
     }
-    pop_condition_if(RHS);
+    popConditionIf(RHS);
     return FLOAT;
 }
 <RHS,IN_BRACKETS>("+"|"-")?"nan" {
-    yylval.scalar = create_scalar_dup(SCALAR_FLOAT_NUM, yytext);
+    yylval.scalar = createScalarDup(SCALAR_FLOAT_NUM, yytext);
     switch(yytext[0]) {
         case '+':   yylval.scalar->type = SCALAR_FLOAT_POS_NAN; break;
         case '-':   yylval.scalar->type = SCALAR_FLOAT_NEG_NAN; break;
         default:    yylval.scalar->type = SCALAR_FLOAT_NAN;     break;
     }
-    pop_condition_if(RHS);
+    popConditionIf(RHS);
     return FLOAT;
 }
 
 <RHS,IN_BRACKETS>{offset_datetime} {
-    yylval.scalar = create_scalar_dup(SCALAR_DATE_OFFSET_DATETIME, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_DATE_OFFSET_DATETIME, yytext);
+    popConditionIf(RHS);
     return OFFSET_DATETIME;
 }
 <RHS,IN_BRACKETS>{local_datetime} {
-    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATETIME, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATETIME, yytext);
+    popConditionIf(RHS);
     return LOCAL_DATETIME;
 }
 <RHS,IN_BRACKETS>{local_date} {
-    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_DATE, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_DATE, yytext);
+    popConditionIf(RHS);
     return LOCAL_DATE;
 }
 <RHS,IN_BRACKETS>{local_time} {
-    yylval.scalar = create_scalar_dup(SCALAR_DATE_LOCAL_TIME, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_DATE_LOCAL_TIME, yytext);
+    popConditionIf(RHS);
     return LOCAL_TIME;
 }
 
 <RHS,IN_BRACKETS>"true"|"false" {
-    yylval.scalar = create_scalar_dup(SCALAR_BOOLEAN, yytext);
-    pop_condition_if(RHS);
+    yylval.scalar = createScalarDup(SCALAR_BOOLEAN, yytext);
+    popConditionIf(RHS);
     return BOOLEAN;
 }
 
 <INITIAL,IN_BRACKETS,IN_CURLY>{bare_char}+ {
-    yylval.scalar = create_scalar_dup(SCALAR_STRING_BARE, yytext);
+    yylval.scalar = createScalarDup(SCALAR_STRING_BARE, yytext);
     return BARE_STRING;
 }
 
@@ -234,43 +233,43 @@ time_num_offset [+-]{digit}{2,2}":"{digit}{2,2}
 
 %%
 
-static void push_condition(int condition) {
-    if (stack_root == NULL) {
-        stack_root = malloc(sizeof(ConditionStack));
-        stack_root->condition = condition;
-        stack_root->next = NULL;
+static void pushCondition(int condition) {
+    if (stackRoot == NULL) {
+        stackRoot = malloc(sizeof(ConditionStack));
+        stackRoot->condition = condition;
+        stackRoot->next = NULL;
     } else {
-        ConditionStack* new_root = malloc(sizeof(ConditionStack));
-        new_root->condition = condition;
-        new_root->next = stack_root;
-        stack_root = new_root;
+        ConditionStack* newRoot = malloc(sizeof(ConditionStack));
+        newRoot->condition = condition;
+        newRoot->next = stackRoot;
+        stackRoot = newRoot;
     }
     BEGIN(condition);
     // printf("[LEX] push @ '%s' -> %d\n", yytext, YY_START);
 }
 
-static void pop_condition(void) {
-    if (stack_root == NULL) {
+static void popCondition(void) {
+    if (stackRoot == NULL) {
         printf("[LEX_ERROR] Wanted to pop start condition, but stack is empty\n");
         exit(1);
     } else {
-        stack_root = stack_root->next;
-        if (stack_root == NULL) {
+        stackRoot = stackRoot->next;
+        if (stackRoot == NULL) {
             BEGIN(INITIAL);
         } else {
-            BEGIN(stack_root->condition);
+            BEGIN(stackRoot->condition);
         }
     }
     // printf("[LEX] pop @ '%s' -> %d\n", yytext, YY_START);
 }
 
-static inline void pop_condition_if(int condition) {
+static inline void popConditionIf(int condition) {
     if (YY_START == condition) {
-        pop_condition();
+        popCondition();
     }
 }
 
-static char* read_literal(void) {
+static char* readLiteral(void) {
     char* buffer = malloc(64 * sizeof(char));
     size_t size = 64;
     size_t index = 0;
@@ -278,17 +277,17 @@ static char* read_literal(void) {
 
     while((c = input()) != 0x27) { // terminating ' character
         if (c == 0x09 || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
-            append_char(&buffer, &index, &size, c);
+            appendChar(&buffer, &index, &size, c);
         } else { // read valid non-ascii (utf8 chars)
             unput(c);
-            read_non_ascii_char(&buffer, &index, &size);
+            readNonAsciiChar(&buffer, &index, &size);
         }
     }
     buffer = realloc(buffer, index);
     return buffer;
 }
 
-static char* read_basic(void) {
+static char* readBasic(void) {
     char* buffer = malloc(64 * sizeof(char));
     size_t size = 64;
     size_t index = 0;
@@ -296,7 +295,7 @@ static char* read_basic(void) {
 
     while((c = input()) != 0x22) { // terminating " character
         if (c == 0x09 || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
-            append_char(&buffer, &index, &size, c);
+            appendChar(&buffer, &index, &size, c);
             if (c == 0x5C) {    // backslash for escaping
                 c = input();
                 switch(c) {
@@ -307,15 +306,15 @@ static char* read_basic(void) {
                     case 0x6E:
                     case 0x72:
                     case 0x74:
-                        append_char(&buffer, &index, &size, c);
+                        appendChar(&buffer, &index, &size, c);
                         break;
                     case 0x75:
-                        append_char(&buffer, &index, &size, c);
-                        read_hex(&buffer, &index, &size, 4);
+                        appendChar(&buffer, &index, &size, c);
+                        readHex(&buffer, &index, &size, 4);
                         break;
                     case 0x55:
-                        append_char(&buffer, &index, &size, c);
-                        read_hex(&buffer, &index, &size, 8);
+                        appendChar(&buffer, &index, &size, c);
+                        readHex(&buffer, &index, &size, 8);
                         break;
                     default:
                         printf("[LEX ERROR] invalid escape char: %c\n", c);
@@ -324,34 +323,34 @@ static char* read_basic(void) {
             }
         } else { // read valid non-ascii (utf8 chars)
             unput(c);
-            read_non_ascii_char(&buffer, &index, &size);
+            readNonAsciiChar(&buffer, &index, &size);
         }
     }
     buffer = realloc(buffer, index);
     return buffer;
 }
 
-static char* read_multiline_literal(void) {
+static char* readMultilineLiteral(void) {
     char* buffer = malloc(64 * sizeof(char));
     size_t size = 64;
     size_t index = 0;
     char c;
-    int terminator_count = 0;
+    int terminatorCount = 0;
 
-    while(terminator_count < 3) {
+    while(terminatorCount < 3) {
         c = input();
         if (c == 0x27) {
-            terminator_count++;
+            terminatorCount++;
         } else {
-            while (terminator_count > 0) {
-                append_char(&buffer, &index, &size, 0x27);
-                terminator_count--;
+            while (terminatorCount > 0) {
+                appendChar(&buffer, &index, &size, 0x27);
+                terminatorCount--;
             }
             if (c == 0x09 || c == 0x0A || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
-                append_char(&buffer, &index, &size, c);
+                appendChar(&buffer, &index, &size, c);
             } else { // read valid non-ascii (utf8 chars)
                 unput(c);
-                read_non_ascii_char(&buffer, &index, &size);
+                readNonAsciiChar(&buffer, &index, &size);
             }
         }
     }
@@ -359,24 +358,24 @@ static char* read_multiline_literal(void) {
     return buffer;
 }
 
-static char* read_multiline_basic(void) {
+static char* readMultilineBasic(void) {
     char* buffer = malloc(64 * sizeof(char));
     size_t size = 64;
     size_t index = 0;
     char c;
-    int terminator_count = 0;
+    int terminatorCount = 0;
 
-    while(terminator_count < 3) {
+    while(terminatorCount < 3) {
         c = input();
         if (c == 0x22) {
-            terminator_count++;
+            terminatorCount++;
         } else {
-            while (terminator_count > 0) {
-                append_char(&buffer, &index, &size, 0x22);
-                terminator_count--;
+            while (terminatorCount > 0) {
+                appendChar(&buffer, &index, &size, 0x22);
+                terminatorCount--;
             }
             if (c == 0x09 || c == 0x0A || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
-                append_char(&buffer, &index, &size, c);
+                appendChar(&buffer, &index, &size, c);
                 if (c == 0x5C) {    // backslash for escaping
                     c = input();
                     switch(c) {
@@ -387,15 +386,15 @@ static char* read_multiline_basic(void) {
                         case 0x6E:
                         case 0x72:
                         case 0x74:
-                            append_char(&buffer, &index, &size, c);
+                            appendChar(&buffer, &index, &size, c);
                             break;
                         case 0x75:
-                            append_char(&buffer, &index, &size, c);
-                            read_hex(&buffer, &index, &size, 4);
+                            appendChar(&buffer, &index, &size, c);
+                            readHex(&buffer, &index, &size, 4);
                             break;
                         case 0x55:
-                            append_char(&buffer, &index, &size, c);
-                            read_hex(&buffer, &index, &size, 8);
+                            appendChar(&buffer, &index, &size, c);
+                            readHex(&buffer, &index, &size, 8);
                             break;
                         default:
                             printf("[LEX ERROR] invalid escape char: %c\n", c);
@@ -404,7 +403,7 @@ static char* read_multiline_basic(void) {
                 }
             } else { // read valid non-ascii (utf8 chars)
                 unput(c);
-                read_non_ascii_char(&buffer, &index, &size);
+                readNonAsciiChar(&buffer, &index, &size);
             }
         }
     }
@@ -412,7 +411,7 @@ static char* read_multiline_basic(void) {
     return buffer;
 }
 
-static char* read_comment(void) {
+static char* readComment(void) {
     char* buffer = malloc(64 * sizeof(char));
     size_t size = 64;
     size_t index = 0;
@@ -420,17 +419,17 @@ static char* read_comment(void) {
 
     while((c = input()) != '\n') { // terminating ' character
         if (c == 0x09 || (c >= 0x20 && c <= 0x7E)) { // read valid ascii chars
-            append_char(&buffer, &index, &size, c);
+            appendChar(&buffer, &index, &size, c);
         } else { // read valid non-ascii (utf8 chars)
             unput(c);
-            read_non_ascii_char(&buffer, &index, &size);
+            readNonAsciiChar(&buffer, &index, &size);
         }
     }
     buffer = realloc(buffer, index);
     return buffer;
 }
 
-static void append_char(char** buffer, size_t* index, size_t* len, char c) {
+static void appendChar(char** buffer, size_t* index, size_t* len, char c) {
     (*buffer)[*index] = c;
     *index = *index + 1;
     if (*index == *len) {
@@ -439,34 +438,34 @@ static void append_char(char** buffer, size_t* index, size_t* len, char c) {
     }
 }
 
-static int is_hex(char c) {
+static int isHex(char c) {
     return (c >= '0' && c <= '9') ||
            (c >= 'a' && c <= 'f') ||
            (c >= 'A' && c <= 'F');
 }
 
-static void read_hex(char** buffer, size_t* index, size_t* len, size_t count) {
+static void readHex(char** buffer, size_t* index, size_t* len, size_t count) {
     for (size_t i = 0; i < count; i++) {
         char c = input();
-        if (!is_hex(c)) {
+        if (!isHex(c)) {
             printf("[LEX ERROR] invalid unicode escape: expected hex character, got %c\n", c);
             exit(1);
         }
-        append_char(buffer, index, len, c);
+        appendChar(buffer, index, len, c);
     }
 }
 
 
-static void read_non_ascii_char(char** buffer, size_t* index, size_t* len) {
+static void readNonAsciiChar(char** buffer, size_t* index, size_t* len) {
     unsigned char c = (unsigned char) input();
-    size_t utf_len;
+    size_t utfLen;
 
     if (c >= 0xF0 && c < 0xF8) { // 11110xxx
-        utf_len = 4;
+        utfLen = 4;
     } else if (c >= 0xE0 && c < 0xF0) { // 1110xxxx
-        utf_len = 3;
+        utfLen = 3;
     } else if (c >= 0xC0 && c < 0xE0) { // 110xxxxx
-        utf_len = 2;
+        utfLen = 2;
     } else if (c < 0x80) {                        // 0xxxxxxx
         // is ascii char
         printf("[LEX ERROR] utf8: unexpected char: ascii: %c, 0x%02X\n", c, c & 0xFF);
@@ -475,13 +474,13 @@ static void read_non_ascii_char(char** buffer, size_t* index, size_t* len) {
         printf("[LEX ERROR] utf8: invalid first byte: 0x%X", c);
         exit(1);
     }
-    append_char(buffer, index, len, c);
-    for (size_t i = 1; i < utf_len; i++) {
+    appendChar(buffer, index, len, c);
+    for (size_t i = 1; i < utfLen; i++) {
         c = input();
         if (c < 0x80 || c >= 0xC0) {
             printf("[LEX ERROR] utf8: invalid byte #%d: 0x%X\n", i, c);
             exit(1);
         }
-        append_char(buffer, index, len, c);
+        appendChar(buffer, index, len, c);
     }
 }

@@ -12,8 +12,8 @@ typedef struct _Key
 	struct _Key * descendant;
 } Key;
 
-void append_key (Key * base, Key * appendant);
-Key * key_from_scalar (Scalar * scalar);
-void print_key (const Key * key);
+void appendKey (Key * base, Key * appendant);
+Key * keyFromScalar (Scalar * scalar);
+void printKey (const Key * key);
 
 #endif // KEY_H
