@@ -373,6 +373,7 @@ static char* readMultilineBasic(void) {
 				if (c == 0x5C) {    // backslash for escaping
 					c = input();
 					switch(c) {
+						case 0x0A:
 						case 0x22:
 						case 0x5C:
 						case 0x62:
@@ -391,7 +392,7 @@ static char* readMultilineBasic(void) {
 							readHex(&buffer, &index, &size, 8);
 							break;
 						default:
-							printf("[LEX ERROR] invalid escape char: %c\n", c);
+							printf("[LEX ERROR] invalid escape char: 0x%02X\n", c);
 							exit(1);
 					}
 				}
