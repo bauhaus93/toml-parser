@@ -21,9 +21,11 @@ Array * pushValue (Array * root, Value * value)
 
 void printArray (const Array * array)
 {
-	assert (array != NULL);
 	printf (" [ ");
-	printArrayElement (array);
+	if (array != NULL)
+	{
+		printArrayElement (array);
+	}
 	printf (" ] ");
 }
 

@@ -75,6 +75,7 @@ extern int yylex();
 %type <key> DottedKey
 %type <value> Value
 %type <array> Array
+%type <array> ArrayList
 %type <scalar> Scalar
 %type <scalar> IntegerScalar
 %type <scalar> BooleanScalar
@@ -85,6 +86,8 @@ extern int yylex();
 %type <table> TableSimple
 %type <table> TableArray
 %type <inlineTable> InlineTable
+%type <inlineTable> InlineTableList
+%type <scalar> CommentNewline
 
 %start TomlFile
 
@@ -96,8 +99,9 @@ extern int yylex();
 
 TomlFile   : 	Expressions { $$ = $1; *root = $$; }
 
-Expressions	: 	NEWLINE Expressions { $$ = $2; }
-		|	Expression NEWLINE Expressions { $$ = pushExpression($3, $1); }
+Expressions	:	Expressions NEWLINE Expression { $$ = pushExpression($1, $3); }
+		| 	Expressions NEWLINE { $$ = $1; }
+		|	Expression { $$ = $1; }
 		|	{ $$ = NULL; }	
 		;
 
@@ -140,21 +144,31 @@ DottedKey	:	SimpleKey DOT Key { appendKey($1, $3); $$ = $1; }
 
 
 Value   :	Scalar { $$ = valueFromScalar($1); }
-        |	CURLY_OPEN InlineTable CURLY_CLOSE { $$ = valueFromInlineTable($2); }
-        |	BRACKETS_OPEN Array BRACKETS_CLOSE { $$ = valueFromArray($2); }
+        |	InlineTable { $$ = valueFromInlineTable($1); }
+	|	Array { $$ = valueFromArray($1); }
+	;
 
-
-InlineTable	:	KeyPair COMMA InlineTable { $$ = pushPair($3, $1); }
-            	|	KeyPair { $$ = inlineTableFromKeyPair($1); }
+InlineTable	:	CURLY_OPEN InlineTableList CURLY_CLOSE { $$ = $2; }
+            	|	CURLY_OPEN CURLY_CLOSE { $$ = NULL; }	
 		;
 
+InlineTableList	:	KeyPair { $$ = inlineTableFromKeyPair($1); }
+		|	COMMA KeyPair { $$ = inlineTableFromKeyPair($2); }
+		|	InlineTableList COMMA KeyPair { $$ = pushPair($1, $3); }
+		;
+Array	:	BRACKETS_OPEN ArrayList CommentNewline BRACKETS_CLOSE { $$ = $2; }
+	|	BRACKETS_OPEN ArrayList COMMA CommentNewline BRACKETS_CLOSE { $$ = $2; }
+	|	BRACKETS_OPEN BRACKETS_CLOSE { $$ = NULL; }
+	;
 
-Array   :	Value COMMA NEWLINE Array { $$ = pushValue($4, $1); }
-	|	Value COMMA COMMENT NEWLINE Array { $$ = pushValue($5, $1); addComment($1, $3); }	
-	|	Value COMMA Array { $$ = pushValue($3, $1); }
-        |	Value NEWLINE { $$ = arrayFromValue($1); }
-        |	Value COMMENT NEWLINE { $$ = arrayFromValue($1); addComment($1, $2); }
-        |	Value { $$ = arrayFromValue($1); }
+ArrayList	:	CommentNewline Value { $$ = arrayFromValue($2); addComment($2, $1); }
+		|	COMMA CommentNewline Value { $$ = arrayFromValue($3); addComment($3, $2); }
+		|	ArrayList COMMA CommentNewline Value  { $$ = pushValue($1, $4); addComment($4, $3); }
+
+CommentNewline	:	CommentNewline NEWLINE { $$ = NULL; }
+		|	CommentNewline COMMENT NEWLINE { $$ = $1; }
+		|	{ $$ = NULL; }
+		;
 
 Scalar  :   IntegerScalar { $$ = $1; }
         |   BooleanScalar { $$ = $1; }

@@ -12,7 +12,6 @@ Value * valueFromScalar (Scalar * scalar)
 
 Value * valueFromArray (Array * array)
 {
-	assert (array != NULL);
 	Value * val = malloc (sizeof (Value));
 	val->type = VALUE_ARRAY;
 	val->data.array = array;
@@ -22,7 +21,6 @@ Value * valueFromArray (Array * array)
 
 Value * valueFromInlineTable (InlineTable * table)
 {
-	assert (table != NULL);
 	Value * val = malloc (sizeof (Value));
 	val->type = VALUE_INLINE_TABLE;
 	val->data.table = table;
@@ -33,7 +31,6 @@ Value * valueFromInlineTable (InlineTable * table)
 void addComment (Value * value, Scalar * comment)
 {
 	assert (value != NULL);
-	assert (comment != NULL);
 	assert (value->comment == NULL);
 	value->comment = comment;
 }
